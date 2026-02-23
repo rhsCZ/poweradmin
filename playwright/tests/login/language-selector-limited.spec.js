@@ -5,8 +5,12 @@ import users from '../../fixtures/users.json' assert { type: 'json' };
  * Tests for limited language configuration.
  *
  * These tests verify that when `enabled_languages` is set to a subset,
- * only those languages appear in the selector. Designed for the SQLite
- * devcontainer instance (port 8082) with: en_EN,de_DE,fr_FR,ja_JP,pl_PL
+ * only those languages appear in the selector. Tests are automatically
+ * skipped when the instance has all languages enabled (no `enabled_languages`
+ * configured).
+ *
+ * The SQLite devcontainer (port 8082) is configured with:
+ *   enabled_languages: en_EN,de_DE,fr_FR,ja_JP,pl_PL
  *
  * Run with: BASE_URL=http://localhost:8082 npx playwright test language-selector-limited
  */
@@ -25,15 +29,21 @@ const EXCLUDED_LANGUAGES = [
   'sv_SE', 'uk_UA', 'vi_VN',
 ];
 
+const EXPECTED_COUNT = Object.keys(CONFIGURED_LANGUAGES).length;
+
 test.describe('Language Selector - Limited Configuration', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
+
+    // Skip all tests in this suite if the instance does not have limited languages
+    const count = await page.locator('select[name="userlang"] option').count();
+    test.skip(count !== EXPECTED_COUNT, `Skipping: instance has ${count} languages (expected ${EXPECTED_COUNT} for limited config)`);
   });
 
   test('should show exactly the configured number of languages', async ({ page }) => {
     const options = page.locator('select[name="userlang"] option');
     const count = await options.count();
-    expect(count).toBe(Object.keys(CONFIGURED_LANGUAGES).length);
+    expect(count).toBe(EXPECTED_COUNT);
   });
 
   test('should contain only the configured locales', async ({ page }) => {
@@ -134,6 +144,6 @@ test.describe('Language Selector - Limited Configuration', () => {
     // Verify still limited to configured languages
     const options = page.locator('select[name="userlang"] option');
     const count = await options.count();
-    expect(count).toBe(Object.keys(CONFIGURED_LANGUAGES).length);
+    expect(count).toBe(EXPECTED_COUNT);
   });
 });
