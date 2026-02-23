@@ -142,6 +142,7 @@ JetBrains provides IDE licenses used for development of this project.
 
 * HLkomm Telekommunikations GmbH
 * IRAM (Institut de Radioastronomie Millimétrique)
+* [stepping stone AG](https://www.stepping-stone.ch/)
 * VISTEC Internet Service GmbH
 
 ### Individual Donors
