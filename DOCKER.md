@@ -220,25 +220,85 @@ docker run -d --name poweradmin -p 80:80 \
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_SESSION_KEY` | Custom session key (recommended for production) | Auto-generated | No |
+| `PA_PASSWORD_ENCRYPTION` | Password hashing algorithm (`md5`, `md5salt`, `bcrypt`, `argon2i`, `argon2id`) | `bcrypt` | No |
+| `PA_PASSWORD_COST` | Cost factor for bcrypt hashing | `12` | No |
+| `PA_LOGIN_TOKEN_VALIDATION` | Enable token validation for login form | `true` | No |
+| `PA_GLOBAL_TOKEN_VALIDATION` | Enable token validation for all forms | `true` | No |
 
+### Password Policy
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_PASSWORD_RULES_ENABLED` | Enable password policy enforcement | `true` | No |
+| `PA_PASSWORD_MIN_LENGTH` | Minimum password length | `6` | No |
+| `PA_PASSWORD_REQUIRE_UPPERCASE` | Require at least one uppercase letter | `true` | No |
+| `PA_PASSWORD_REQUIRE_LOWERCASE` | Require at least one lowercase letter | `true` | No |
+| `PA_PASSWORD_REQUIRE_NUMBERS` | Require at least one number | `true` | No |
+| `PA_PASSWORD_REQUIRE_SPECIAL` | Require at least one special character | `false` | No |
+
+### Account Lockout
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_LOCKOUT_ENABLED` | Enable account lockout after failed login attempts | `false` | No |
+| `PA_LOCKOUT_ATTEMPTS` | Number of failed attempts before lockout | `5` | No |
+| `PA_LOCKOUT_DURATION` | Lockout duration in minutes | `15` | No |
+| `PA_LOCKOUT_TRACK_IP` | Lock accounts based on IP address | `true` | No |
+| `PA_LOCKOUT_CLEAR_ON_SUCCESS` | Clear failed attempts after successful login | `true` | No |
 
 ### Multi-Factor Authentication (MFA)
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_MFA_ENABLED` | Enable MFA functionality | `false` | No |
+| `PA_MFA_ENFORCED` | Enforce MFA for users with enforce permission | `false` | No |
 | `PA_MFA_APP_ENABLED` | Enable authenticator app option | `true` | No |
 | `PA_MFA_EMAIL_ENABLED` | Enable email verification option | `true` | No |
 | `PA_MFA_RECOVERY_CODES` | Number of recovery codes to generate | `8` | No |
 | `PA_MFA_RECOVERY_CODE_LENGTH` | Length of recovery codes | `10` | No |
 
-### Recaptcha
+### Password Reset
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_PASSWORD_RESET_ENABLED` | Enable password reset functionality | `false` | No |
+| `PA_PASSWORD_RESET_TOKEN_LIFETIME` | Token validity in seconds | `3600` | No |
+| `PA_PASSWORD_RESET_RATE_LIMIT_ATTEMPTS` | Max reset attempts per time window | `5` | No |
+| `PA_PASSWORD_RESET_RATE_LIMIT_WINDOW` | Rate limit window in seconds | `3600` | No |
+| `PA_PASSWORD_RESET_MIN_TIME_BETWEEN` | Minimum seconds between requests | `60` | No |
+
+### Username Recovery
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_USERNAME_RECOVERY_ENABLED` | Enable username recovery functionality | `false` | No |
+| `PA_USERNAME_RECOVERY_RATE_LIMIT_ATTEMPTS` | Max recovery attempts per time window | `5` | No |
+| `PA_USERNAME_RECOVERY_RATE_LIMIT_WINDOW` | Rate limit window in seconds | `3600` | No |
+| `PA_USERNAME_RECOVERY_MIN_TIME_BETWEEN` | Minimum seconds between requests | `60` | No |
+
+### reCAPTCHA
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_RECAPTCHA_ENABLED` | Enable reCAPTCHA on login form | `false` | No |
 | `PA_RECAPTCHA_SITE_KEY` | reCAPTCHA site key (public key) | Empty | No |
 | `PA_RECAPTCHA_SECRET_KEY` | reCAPTCHA secret key (private key) | Empty | No |
+| `PA_RECAPTCHA_VERSION` | reCAPTCHA version (`v2` or `v3`) | `v3` | No |
+| `PA_RECAPTCHA_V3_THRESHOLD` | Score threshold for v3 (0.0 - 1.0) | `0.5` | No |
+
+### Notifications
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_NOTIFICATION_ZONE_ACCESS` | Enable zone access change notifications | `false` | No |
+
+### User Agreement
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_USER_AGREEMENT_ENABLED` | Enable user agreement system | `false` | No |
+| `PA_USER_AGREEMENT_VERSION` | Current agreement version | `1.0` | No |
+| `PA_USER_AGREEMENT_REQUIRE_ON_CHANGE` | Require re-acceptance when version changes | `true` | No |
 
 ### Mail Configuration
 
