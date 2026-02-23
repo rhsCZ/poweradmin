@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
 
@@ -30,19 +30,19 @@ use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
  * Central registry for all available DNS wizards. Manages wizard lifecycle,
  * availability, and provides access to wizard instances.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 class WizardRegistry
 {
     private ConfigurationInterface $config;
     private array $wizards = [];
     private array $wizardClasses = [
-        'DMARC' => 'Poweradmin\Domain\Service\DnsWizard\DMARCWizard',
-        'SPF' => 'Poweradmin\Domain\Service\DnsWizard\SPFWizard',
-        'DKIM' => 'Poweradmin\Domain\Service\DnsWizard\DKIMWizard',
-        'CAA' => 'Poweradmin\Domain\Service\DnsWizard\CAAWizard',
-        'TLSA' => 'Poweradmin\Domain\Service\DnsWizard\TLSAWizard',
-        'SRV' => 'Poweradmin\Domain\Service\DnsWizard\SRVWizard',
+        'DMARC' => 'Poweradmin\Module\DnsWizard\Service\DMARCWizard',
+        'SPF' => 'Poweradmin\Module\DnsWizard\Service\SPFWizard',
+        'DKIM' => 'Poweradmin\Module\DnsWizard\Service\DKIMWizard',
+        'CAA' => 'Poweradmin\Module\DnsWizard\Service\CAAWizard',
+        'TLSA' => 'Poweradmin\Module\DnsWizard\Service\TLSAWizard',
+        'SRV' => 'Poweradmin\Module\DnsWizard\Service\SRVWizard',
     ];
 
     /**
@@ -62,6 +62,11 @@ class WizardRegistry
      */
     public function isEnabled(): bool
     {
+        $enabled = $this->config->get('modules', 'dns_wizards.enabled', null);
+        if ($enabled !== null) {
+            return $enabled === true;
+        }
+
         try {
             $wizardConfig = $this->config->getGroup('dns_wizards');
             return isset($wizardConfig['enabled']) && $wizardConfig['enabled'] === true;
@@ -83,7 +88,7 @@ class WizardRegistry
             return [];
         }
 
-        $wizardConfig = $this->config->getGroup('dns_wizards');
+        $wizardConfig = $this->getWizardConfig();
         $availableTypes = $wizardConfig['available_types'] ?? [];
 
         // Filter to only include wizards that have been implemented
@@ -201,6 +206,29 @@ class WizardRegistry
      * @param string $className Fully qualified class name
      * @return void
      */
+    /**
+     * Get wizard configuration with module config fallback
+     *
+     * @return array Wizard configuration
+     */
+    private function getWizardConfig(): array
+    {
+        try {
+            $modules = $this->config->getGroup('modules');
+            if (isset($modules['dns_wizards'])) {
+                return $modules['dns_wizards'];
+            }
+        } catch (\Exception $e) {
+            // Fall through to legacy config
+        }
+
+        try {
+            return $this->config->getGroup('dns_wizards');
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
     public function registerWizard(string $type, string $className): void
     {
         $this->wizardClasses[$type] = $className;

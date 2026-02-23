@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 use Poweradmin\Domain\Service\DnsValidation\DMARCRecordValidator;
 use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
@@ -32,7 +32,7 @@ use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
  * DMARC records are TXT records published at _dmarc.<domain> that specify policies for handling
  * emails that fail SPF and/or DKIM authentication.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 class DMARCWizard extends AbstractDnsWizard
 {

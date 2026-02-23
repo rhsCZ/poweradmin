@@ -20,13 +20,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Application\Controller;
+namespace Poweradmin\Module\DnsWizard\Controller;
 
 use Poweradmin\BaseController;
 use Poweradmin\Domain\Model\Permission;
 use Poweradmin\Domain\Model\UserManager;
 use Poweradmin\Domain\Service\DnsRecord;
-use Poweradmin\Domain\Service\DnsWizard\WizardRegistry;
+use Poweradmin\Module\DnsWizard\Service\WizardRegistry;
 use Poweradmin\Infrastructure\Repository\DbZoneRepository;
 
 /**
@@ -35,7 +35,7 @@ use Poweradmin\Infrastructure\Repository\DbZoneRepository;
  * Displays the wizard selection page where users can choose
  * which DNS record wizard to use.
  */
-class DnsWizardController extends BaseController
+class DnsWizardSelectController extends BaseController
 {
     private DnsRecord $dnsRecord;
     private WizardRegistry $wizardRegistry;
@@ -53,7 +53,7 @@ class DnsWizardController extends BaseController
     public function run(): void
     {
         // Check if wizards are enabled
-        if (!$this->getConfig()->get('dns_wizards', 'enabled', false)) {
+        if (!$this->getModuleConfig('dns_wizards', 'enabled', false)) {
             $this->showError(_('DNS wizards are not enabled.'));
         }
 
@@ -87,6 +87,7 @@ class DnsWizardController extends BaseController
         $wizards = $this->wizardRegistry->getWizardMetadata();
 
         // Render the wizard selection page
+        $this->setCurrentPage('module_dns_wizard_select');
         $this->render('dns_wizard_select.html', [
             'zone_id' => $zone_id,
             'zone_name' => $zone_name,

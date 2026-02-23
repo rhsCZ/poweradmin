@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 /**
  * Interface for DNS Record Wizards
@@ -28,7 +28,7 @@ namespace Poweradmin\Domain\Service\DnsWizard;
  * Defines the contract for all DNS record wizard implementations.
  * Each wizard type (DMARC, SPF, DKIM, CAA, TLSA, SRV) must implement this interface.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 interface DnsWizardInterface
 {

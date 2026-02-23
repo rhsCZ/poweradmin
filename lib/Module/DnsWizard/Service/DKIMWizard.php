@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
 
@@ -34,7 +34,7 @@ use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
  * NOTE: This wizard manages DNS records only. DKIM keys are generated
  * on mail servers (Postfix, Exim, etc.), not in PowerDNS.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 class DKIMWizard extends AbstractDnsWizard
 {

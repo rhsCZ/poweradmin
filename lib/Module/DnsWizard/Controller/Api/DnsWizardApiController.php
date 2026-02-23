@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Application\Controller\Api\Internal;
+namespace Poweradmin\Module\DnsWizard\Controller\Api;
 
 use Exception;
 use Poweradmin\Application\Controller\Api\InternalApiController;
@@ -31,7 +31,7 @@ use Poweradmin\Application\Service\RecordManagerService;
 use Poweradmin\Domain\Model\Permission;
 use Poweradmin\Domain\Model\UserManager;
 use Poweradmin\Domain\Service\DnsRecord;
-use Poweradmin\Domain\Service\DnsWizard\WizardRegistry;
+use Poweradmin\Module\DnsWizard\Service\WizardRegistry;
 use Poweradmin\Domain\Utility\DnsHelper;
 use Poweradmin\Infrastructure\Logger\LegacyLogger;
 use Poweradmin\Infrastructure\Repository\DbRecordCommentRepository;
@@ -45,9 +45,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
  * Handles internal API endpoints for DNS record wizards.
  * These endpoints are used by JavaScript for dynamic wizard interactions.
  *
- * @package Poweradmin\Application\Controller\Api\Internal
+ * @package Poweradmin\Module\DnsWizard\Controller\Api
  */
-class DnsWizardController extends InternalApiController
+class DnsWizardApiController extends InternalApiController
 {
     private WizardRegistry $wizardRegistry;
 
@@ -59,7 +59,11 @@ class DnsWizardController extends InternalApiController
     public function run(): void
     {
         // Check if wizards are enabled
-        if (!$this->config->get('dns_wizards', 'enabled', false)) {
+        $enabled = $this->config->get('modules', 'dns_wizards.enabled', null);
+        if ($enabled === null) {
+            $enabled = $this->config->get('dns_wizards', 'enabled', false);
+        }
+        if (!$enabled) {
             $response = $this->returnApiError('DNS wizards are not enabled', 403);
             $response->send();
             exit;

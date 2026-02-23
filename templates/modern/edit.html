@@ -24,10 +24,12 @@
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <strong><i class="bi bi-plus-circle me-2"></i>{% trans %}Add new record{% endtrans %}</strong>
         <div>
-            {% if dns_wizards_enabled and not is_reverse_zone %}
-            <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/wizard" class="btn btn-primary btn-sm me-1" title="{% trans %}Guided wizards for DMARC, SPF, DKIM, CAA, TLSA, and SRV records{% endtrans %}">
-                <i class="bi bi-magic me-1 text-white"></i>{% trans %}Record Wizard{% endtrans %}
+            {% if dns_wizard_actions is defined and dns_wizard_actions|length > 0 and not is_reverse_zone %}
+            {% for action in dns_wizard_actions %}
+            <a href="{{ base_url_prefix }}{{ action.url }}" class="btn btn-primary btn-sm me-1" title="{% trans %}Guided wizards for DMARC, SPF, DKIM, CAA, TLSA, and SRV records{% endtrans %}">
+                <i class="bi bi-{{ action.icon }} me-1 text-white"></i>{{ action.label|trans }}
             </a>
+            {% endfor %}
             {% endif %}
             <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/records/add" class="btn btn-primary btn-sm me-1">
                 <i class="bi bi-table me-1 text-white"></i>{% trans %}Multi-record mode{% endtrans %}
@@ -555,10 +557,12 @@
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <strong><i class="bi bi-plus-circle me-2"></i>{% trans %}Add new record{% endtrans %}</strong>
         <div>
-            {% if dns_wizards_enabled and not is_reverse_zone %}
-            <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/wizard" class="btn btn-primary btn-sm me-1" title="{% trans %}Guided wizards for DMARC, SPF, DKIM, CAA, TLSA, and SRV records{% endtrans %}">
-                <i class="bi bi-magic me-1 text-white"></i>{% trans %}Record Wizard{% endtrans %}
+            {% if dns_wizard_actions is defined and dns_wizard_actions|length > 0 and not is_reverse_zone %}
+            {% for action in dns_wizard_actions %}
+            <a href="{{ base_url_prefix }}{{ action.url }}" class="btn btn-primary btn-sm me-1" title="{% trans %}Guided wizards for DMARC, SPF, DKIM, CAA, TLSA, and SRV records{% endtrans %}">
+                <i class="bi bi-{{ action.icon }} me-1 text-white"></i>{{ action.label|trans }}
             </a>
+            {% endfor %}
             {% endif %}
             <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/records/add" class="btn btn-primary btn-sm me-1">
                 <i class="bi bi-table me-1 text-white"></i>{% trans %}Multi-record mode{% endtrans %}

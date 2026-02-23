@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
 
@@ -30,7 +30,7 @@ use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
  * Provides common functionality and shared logic for all DNS wizard implementations.
  * Concrete wizard classes (DMARCWizard, SPFWizard, etc.) should extend this class.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 abstract class AbstractDnsWizard implements DnsWizardInterface
 {
@@ -126,6 +126,29 @@ abstract class AbstractDnsWizard implements DnsWizardInterface
         }
 
         return $preview;
+    }
+
+    /**
+     * Get wizard module configuration with legacy fallback
+     *
+     * @return array Wizard configuration
+     */
+    protected function getWizardConfig(): array
+    {
+        try {
+            $modules = $this->config->getGroup('modules');
+            if (isset($modules['dns_wizards'])) {
+                return $modules['dns_wizards'];
+            }
+        } catch (\Exception $e) {
+            // Fall through to legacy config
+        }
+
+        try {
+            return $this->config->getGroup('dns_wizards');
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**

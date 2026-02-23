@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
 
@@ -31,7 +31,7 @@ use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
  * SRV records define the location (hostname and port) of servers for
  * specified services.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 class SRVWizard extends AbstractDnsWizard
 {

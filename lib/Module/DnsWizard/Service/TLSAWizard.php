@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
 
@@ -33,7 +33,7 @@ use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
  *
  * IMPORTANT: TLSA requires DNSSEC to be enabled on the zone.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 class TLSAWizard extends AbstractDnsWizard
 {

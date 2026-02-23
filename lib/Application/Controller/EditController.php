@@ -501,7 +501,7 @@ class EditController extends BaseController
             'record_type_filter' => $recordTypeFilter,
             'content_filter' => $contentFilter,
             'display_hostname_only' => $display_hostname_only,
-            'dns_wizards_enabled' => $this->config->get('dns_wizards', 'enabled', false),
+            'dns_wizard_actions' => $this->getDnsWizardActions($zone_id),
             'export_formats' => $this->getExportFormats($zone_id),
             'import_enabled' => $this->isImportEnabled(),
         ]);
@@ -647,6 +647,14 @@ class EditController extends BaseController
         $this->finalizeSave($error, $serial_mismatch, $this->dnsRecord, $zone_id, $one_record_changed, $zone_name);
     }
 
+
+    private function getDnsWizardActions(int $zone_id): array
+    {
+        $isAdmin = UserManager::verifyPermission($this->db, 'user_is_ueberuser');
+        $registry = new ModuleRegistry($this->config);
+        $registry->loadModules();
+        return $registry->getCapabilityData('dns_wizard', ['zone_id' => $zone_id], $isAdmin);
+    }
 
     private function getWhoisActions(int $zone_id): array
     {

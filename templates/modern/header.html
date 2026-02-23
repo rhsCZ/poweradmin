@@ -101,7 +101,7 @@
 
                     {% if perm_view_zone_own or perm_view_zone_other or perm_zone_master_add or perm_zone_slave_add %}
                     <!-- Zones Section -->
-                    {% set zones_active = current_page in ['list_forward_zones', 'list_reverse_zones', 'add_zone_master', 'add_zone_slave', 'bulk_registration', 'batch_ptr_record', 'list_log_zones', 'edit', 'dns_wizard_select', 'dns_wizard_form'] %}
+                    {% set zones_active = current_page in ['list_forward_zones', 'list_reverse_zones', 'add_zone_master', 'add_zone_slave', 'bulk_registration', 'batch_ptr_record', 'list_log_zones', 'edit'] or current_page starts with 'module_dns_wizard' %}
                     <li class="nav-item">
                         <div class="nav-section-header {{ zones_active ? 'text-primary' : '' }}" role="button" data-bs-target="#navZones" aria-expanded="{{ zones_active ? 'true' : 'false' }}" aria-controls="navZones">
                             <i class="bi bi-diagram-3 me-2"></i>{% trans %}Zones{% endtrans %}
@@ -271,9 +271,9 @@
                     </li>
                     {% endif %}
 
-                    {% if (perm_is_godlike and api_enabled) or (perm_is_godlike and enable_consistency_checks) or (perm_is_godlike and email_previews_enabled) or (module_nav_items is defined and module_nav_items|length > 0) %}
+                    {% if (perm_is_godlike and api_enabled) or (perm_is_godlike and enable_consistency_checks) or (module_nav_items is defined and module_nav_items|length > 0) %}
                     <!-- Tools Section -->
-                    {% set tools_active = current_page in ['api_keys', 'database_consistency', 'email_previews'] or current_page starts with 'module_' %}
+                    {% set tools_active = current_page in ['api_keys', 'database_consistency'] or (current_page starts with 'module_' and not current_page starts with 'module_dns_wizard') %}
                     <li class="nav-item">
                         <div class="nav-section-header {{ tools_active ? 'text-primary' : '' }}" role="button" data-bs-target="#navTools" aria-expanded="{{ tools_active ? 'true' : 'false' }}" aria-controls="navTools">
                             <i class="bi bi-tools me-2"></i>{% trans %}Tools{% endtrans %}
@@ -298,13 +298,6 @@
                             <li class="nav-item">
                                 <a class="nav-link nav-link-sm {{ current_page == 'database_consistency' ? 'active' : '' }}" href="{{ base_url_prefix }}/tools/database-consistency">
                                     <i class="bi bi-database-check me-2"></i>{% trans %}Database Consistency{% endtrans %}
-                                </a>
-                            </li>
-                            {% endif %}
-                            {% if perm_is_godlike and email_previews_enabled %}
-                            <li class="nav-item">
-                                <a class="nav-link nav-link-sm {{ current_page == 'email_previews' ? 'active' : '' }}" href="{{ base_url_prefix }}/tools/email-previews">
-                                    <i class="bi bi-envelope-fill me-2"></i>{% trans %}Email Template Previews{% endtrans %}
                                 </a>
                             </li>
                             {% endif %}

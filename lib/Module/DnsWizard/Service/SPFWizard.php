@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 use Poweradmin\Domain\Service\DnsValidation\SPFRecordValidator;
 use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
@@ -34,7 +34,7 @@ use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
  *
  * Includes DNS lookup limit warning per RFC 7208 Section 4.6.4.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 class SPFWizard extends AbstractDnsWizard
 {

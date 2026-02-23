@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Application\Controller;
+namespace Poweradmin\Module\DnsWizard\Controller;
 
 use Poweradmin\Application\Service\RecordCommentService;
 use Poweradmin\Application\Service\RecordCommentSyncService;
@@ -29,7 +29,7 @@ use Poweradmin\BaseController;
 use Poweradmin\Domain\Model\Permission;
 use Poweradmin\Domain\Model\UserManager;
 use Poweradmin\Domain\Service\DnsRecord;
-use Poweradmin\Domain\Service\DnsWizard\WizardRegistry;
+use Poweradmin\Module\DnsWizard\Service\WizardRegistry;
 use Poweradmin\Domain\Service\FormStateService;
 use Poweradmin\Domain\Utility\DnsHelper;
 use Poweradmin\Infrastructure\Logger\LegacyLogger;
@@ -76,7 +76,7 @@ class DnsWizardFormController extends BaseController
     public function run(): void
     {
         // Check if wizards are enabled
-        if (!$this->getConfig()->get('dns_wizards', 'enabled', false)) {
+        if (!$this->getModuleConfig('dns_wizards', 'enabled', false)) {
             $this->showError(_('DNS wizards are not enabled.'));
         }
 
@@ -158,6 +158,7 @@ class DnsWizardFormController extends BaseController
         }
 
         // Render the wizard form page
+        $this->setCurrentPage('module_dns_wizard_form');
         $this->render('dns_wizard_form.html', [
             'zone_id' => $zone_id,
             'zone_name' => $zone_name,

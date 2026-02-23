@@ -20,7 +20,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Domain\Service\DnsWizard;
+namespace Poweradmin\Module\DnsWizard\Service;
 
 use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
 
@@ -31,7 +31,7 @@ use Poweradmin\Infrastructure\Configuration\ConfigurationInterface;
  * CAA records specify which certificate authorities are authorized to issue
  * SSL/TLS certificates for a domain.
  *
- * @package Poweradmin\Domain\Service\DnsWizard
+ * @package Poweradmin\Module\DnsWizard\Service
  */
 class CAAWizard extends AbstractDnsWizard
 {
@@ -50,7 +50,7 @@ class CAAWizard extends AbstractDnsWizard
     public function getFormSchema(): array
     {
         // Get CA providers from configuration
-        $wizardConfig = $this->config->getGroup('dns_wizards');
+        $wizardConfig = $this->getWizardConfig();
         $caProviders = $wizardConfig['caa_providers'] ?? [];
 
         // Build provider options for dropdown
@@ -263,7 +263,7 @@ class CAAWizard extends AbstractDnsWizard
             $value = $matches[3];
 
             // Determine if it's a known CA or custom
-            $wizardConfig = $this->config->getGroup('dns_wizards');
+            $wizardConfig = $this->getWizardConfig();
             $caProviders = array_keys($wizardConfig['caa_providers'] ?? []);
 
             $formData = [
