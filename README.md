@@ -140,10 +140,34 @@ JetBrains provides IDE licenses used for development of this project.
 
 ### Organizations Supporting Development
 
-* HLkomm Telekommunikations GmbH
-* IRAM (Institut de Radioastronomie Millimétrique)
-* [stepping stone AG](https://www.stepping-stone.ch/)
-* VISTEC Internet Service GmbH
+<table>
+  <tr>
+    <td align="center" width="200">
+      <a href="https://www.pyur.com/business">
+        <img src="https://docs.poweradmin.org/img/sponsors/pyur.svg" alt="PYUR" height="40">
+      </a>
+      <br>HLkomm Telekommunikations GmbH
+    </td>
+    <td align="center" width="200">
+      <a href="https://iram-institute.org/">
+        <img src="https://docs.poweradmin.org/img/sponsors/iram.svg" alt="IRAM" height="40">
+      </a>
+      <br>IRAM
+    </td>
+    <td align="center" width="200">
+      <a href="https://www.stepping-stone.ch/">
+        <img src="https://docs.poweradmin.org/img/sponsors/stepping-stone.svg" alt="stepping stone AG" height="40">
+      </a>
+      <br>stepping stone AG
+    </td>
+    <td align="center" width="200">
+      <a href="https://vistec.net/">
+        <img src="https://docs.poweradmin.org/img/sponsors/vistec.png" alt="VISTEC Internet Service GmbH" height="40">
+      </a>
+      <br>VISTEC Internet Service GmbH
+    </td>
+  </tr>
+</table>
 
 ### Individual Donors
 
