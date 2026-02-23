@@ -213,42 +213,6 @@ return [
         //'reverse_record_types' => ['PTR', 'NS', 'SOA', 'TXT', 'CNAME'],
     ],
 
-    /**
-     * DNS Wizard Settings
-     */
-    'dns_wizards' => [
-        'enabled' => false,                                // Enable DNS record wizards (added in 4.1.0)
-        'available_types' => ['DMARC', 'SPF', 'DKIM', 'CAA', 'TLSA', 'SRV'], // Available wizard types (added in 4.1.0)
-
-        // CAA Provider Configuration
-        // Based on industry research of major Certificate Authorities (added in 4.1.0)
-        'caa_providers' => [
-            // Most common CAs
-            'letsencrypt.org' => "Let's Encrypt",
-            'digicert.com' => 'DigiCert',
-            'sectigo.com' => 'Sectigo (Comodo)',
-            'comodoca.com' => 'Sectigo (legacy domain)',
-
-            // Major cloud providers
-            'awstrust.com' => 'Amazon Trust Services',
-            'amazontrust.com' => 'Amazon Trust Services (alt)',
-            'amazonaws.com' => 'AWS Certificate Manager',
-            'pki.goog' => 'Google Trust Services',
-            'cloudflare.com' => 'Cloudflare',
-
-            // Other popular CAs
-            'godaddy.com' => 'GoDaddy',
-            'globalsign.com' => 'GlobalSign',
-            'entrust.com' => 'Entrust',
-            'entrust.net' => 'Entrust (legacy)',
-            'ssl.com' => 'SSL.com',
-            'buypass.com' => 'Buypass',
-            'usertrust.com' => 'USERTrust (Sectigo)',
-
-            // Special values
-            ';' => 'Allow all CAs (not recommended)',
-        ],
-    ],
 
     /**
      * Mail Settings
@@ -352,7 +316,6 @@ return [
         'edit_conflict_resolution' => 'last_writer_wins', // Options: 'last_writer_wins', 'only_latest_version', '3_way_merge'
         'display_errors' => false,                     // Display PHP errors (false for production) (added in 4.0.0)
         'show_generated_passwords' => true,            // Show generated passwords on user creation (added in 4.0.0)
-        'email_previews_enabled' => false,             // Enable email template preview functionality (added in 4.0.0)
     ],
 
     /**
@@ -806,6 +769,31 @@ return [
             'default_server' => '',
             'request_timeout' => 10,
             'restrict_to_admin' => true,
+        ],
+        'email_previews' => [
+            'restrict_to_admin' => true,
+        ],
+        'dns_wizards' => [
+            'available_types' => ['DMARC', 'SPF', 'DKIM', 'CAA', 'TLSA', 'SRV'],
+            'caa_providers' => [
+                'letsencrypt.org' => "Let's Encrypt",
+                'digicert.com' => 'DigiCert',
+                'sectigo.com' => 'Sectigo (Comodo)',
+                'comodoca.com' => 'Sectigo (legacy domain)',
+                'awstrust.com' => 'Amazon Trust Services',
+                'amazontrust.com' => 'Amazon Trust Services (alt)',
+                'amazonaws.com' => 'AWS Certificate Manager',
+                'pki.goog' => 'Google Trust Services',
+                'cloudflare.com' => 'Cloudflare',
+                'godaddy.com' => 'GoDaddy',
+                'globalsign.com' => 'GlobalSign',
+                'entrust.com' => 'Entrust',
+                'entrust.net' => 'Entrust (legacy)',
+                'ssl.com' => 'SSL.com',
+                'buypass.com' => 'Buypass',
+                'usertrust.com' => 'USERTrust (Sectigo)',
+                ';' => 'Allow all CAs (not recommended)',
+            ],
         ],
     ],
 ];

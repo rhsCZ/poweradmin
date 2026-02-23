@@ -48,6 +48,8 @@ class ModuleRegistry
         'zone_import_export' => \Poweradmin\Module\ZoneImportExport\ZoneImportExportModule::class,
         'whois' => \Poweradmin\Module\Whois\WhoisModule::class,
         'rdap' => \Poweradmin\Module\Rdap\RdapModule::class,
+        'dns_wizards' => \Poweradmin\Module\DnsWizard\DnsWizardModule::class,
+        'email_previews' => \Poweradmin\Module\EmailPreviews\EmailPreviewsModule::class,
     ];
 
     public function __construct(ConfigurationManager $config)
@@ -83,7 +85,13 @@ class ModuleRegistry
             // Legacy config fallback: check standalone config section for modules
             // that were previously configured outside the modules section
             if ($enabled === null) {
-                $enabled = $this->config->get($name, 'enabled', false);
+                $enabled = $this->config->get($name, 'enabled', null);
+            }
+
+            // Additional legacy fallback for email_previews (was misc.email_previews_enabled)
+            // Only applies when no module key exists at all (both checks returned null)
+            if ($enabled === null && $name === 'email_previews') {
+                $enabled = $this->config->get('misc', 'email_previews_enabled', false);
             }
 
             if ($enabled) {

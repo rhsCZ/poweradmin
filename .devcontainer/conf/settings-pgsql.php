@@ -93,7 +93,6 @@ return [
      */
     'misc' => [
         'record_comments_sync' => true,
-        'email_previews_enabled' => true,
     ],
 
     /**
@@ -134,13 +133,6 @@ return [
     ],
 
     /**
-     * DNS Wizard Settings
-     */
-    'dns_wizards' => [
-        'enabled' => true,
-    ],
-
-    /**
      * Module Settings
      */
     'modules' => [
@@ -159,6 +151,12 @@ return [
         'rdap' => [
             'enabled' => true,
             'restrict_to_admin' => false,
+        ],
+        'email_previews' => [
+            'enabled' => true,
+        ],
+        'dns_wizards' => [
+            'enabled' => true,
         ],
     ],
 ];
