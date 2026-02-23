@@ -181,7 +181,7 @@ JetBrains provides IDE licenses used for development of this project.
 * trendymail
 * Deeefje
 
-For feature sponsorship, to speed up development of specific features, or to discuss ideas and issues, please [contact me](https://github.com/edmondas).
+For feature sponsorship, to speed up development of specific features, or to discuss ideas and issues, please [contact me](https://github.com/edmondas). Donations via invoice are also possible for organizations within the EU.
 
 ## Related Projects
 
