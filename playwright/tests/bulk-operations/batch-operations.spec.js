@@ -45,6 +45,7 @@ test.describe('Bulk and Batch Operations', () => {
       }
 
       await page.locator('button[type="submit"], input[type="submit"]').first().click();
+      await page.waitForLoadState('networkidle');
 
       // Verify bulk registration success
       const bodyText = await page.locator('body').textContent();
@@ -104,25 +105,34 @@ test.describe('Bulk and Batch Operations', () => {
   });
 
   test('should perform bulk zone deletion', async ({ page }) => {
-    await page.goto('/zones/forward');
+    // Use letter=all to ensure bulk-test domains (starting with "b") are visible
+    await page.goto('/zones/forward?letter=all');
 
     // Select multiple domains for deletion (if checkboxes exist)
     const hasCheckboxes = await page.locator('input[type="checkbox"]').count() > 0;
     if (hasCheckboxes) {
       // Select test domains for bulk deletion
+      let checkedCount = 0;
       for (const domain of testDomains) {
         const domainRow = page.locator(`tr:has-text("${domain}")`);
         const domainCheckbox = domainRow.locator('input[type="checkbox"]');
         const checkboxCount = await domainCheckbox.count();
         if (checkboxCount > 0) {
           await domainCheckbox.check();
+          checkedCount++;
         }
       }
 
-      // Look for bulk delete button
-      const hasBulkDelete = await page.locator('button, input').filter({ hasText: /Delete|Bulk/i }).count();
+      if (checkedCount === 0) {
+        // No test domains found on the page, nothing to delete
+        return;
+      }
+
+      // Look for enabled bulk delete button
+      const bulkDeleteBtn = page.locator('button:not([disabled])').filter({ hasText: /Delete/i });
+      const hasBulkDelete = await bulkDeleteBtn.count();
       if (hasBulkDelete > 0) {
-        await page.locator('button, input').filter({ hasText: /Delete|Bulk/i }).click();
+        await bulkDeleteBtn.click();
 
         // Confirm bulk deletion
         const hasConfirm = await page.locator('button').filter({ hasText: /Yes|Confirm/i }).count();
@@ -131,7 +141,7 @@ test.describe('Bulk and Batch Operations', () => {
         }
 
         // Verify domains were deleted
-        await page.waitForTimeout(1000);
+        await page.waitForLoadState('networkidle');
         const bodyText = await page.locator('body').textContent();
         for (const domain of testDomains) {
           expect(bodyText).not.toContain(domain);
@@ -140,17 +150,18 @@ test.describe('Bulk and Batch Operations', () => {
     } else {
       // Manual deletion if no bulk option
       for (const domain of testDomains) {
+        await page.goto('/zones/forward?letter=all');
         const bodyText = await page.locator('body').textContent();
         if (bodyText.includes(domain)) {
           const domainRow = page.locator(`tr:has-text("${domain}")`);
-          const deleteLink = await domainRow.locator('a, button').filter({ hasText: /Delete/i }).count();
+          const deleteLink = await domainRow.locator('a[href*="/delete"]');
 
-          if (deleteLink > 0) {
-            await domainRow.locator('a, button').filter({ hasText: /Delete/i }).click();
+          if (await deleteLink.count() > 0) {
+            await deleteLink.first().click();
 
-            const confirmButton = await page.locator('button').filter({ hasText: /Yes|Confirm/i }).count();
-            if (confirmButton > 0) {
-              await page.locator('button').filter({ hasText: /Yes|Confirm/i }).click();
+            const confirmButton = page.locator('button').filter({ hasText: /Yes|Confirm/i });
+            if (await confirmButton.count() > 0) {
+              await confirmButton.click();
             }
           }
         }
