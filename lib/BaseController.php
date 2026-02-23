@@ -583,7 +583,6 @@ abstract class BaseController
                 'api_enabled' => $this->config->get('api', 'enabled', false),
                 'mfa_enabled' => $this->config->get('security', 'mfa.enabled', false),
                 'enable_consistency_checks' => $this->config->get('interface', 'enable_consistency_checks', false),
-                'email_previews_enabled' => $this->config->get('misc', 'email_previews_enabled', false),
                 'api_docs_enabled' => $this->config->get('api', 'docs_enabled', false),
                 'module_nav_items' => $this->getModuleNavItems(),
             ]);

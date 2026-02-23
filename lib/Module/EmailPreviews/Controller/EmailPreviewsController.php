@@ -20,12 +20,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Application\Controller;
+namespace Poweradmin\Module\EmailPreviews\Controller;
 
 use Exception;
 use Poweradmin\BaseController;
 use Poweradmin\Application\Service\EmailTemplateService;
-use Poweradmin\Application\Service\EmailPreviewService;
+use Poweradmin\Module\EmailPreviews\Service\EmailPreviewService;
 
 class EmailPreviewsController extends BaseController
 {
@@ -42,7 +42,11 @@ class EmailPreviewsController extends BaseController
 
     public function run(): void
     {
-        if (!$this->config->get('misc', 'email_previews_enabled', false)) {
+        $enabled = $this->getModuleConfig('email_previews', 'enabled', null);
+        if ($enabled === null) {
+            $enabled = $this->config->get('misc', 'email_previews_enabled', false);
+        }
+        if (!$enabled) {
             $this->showError('The email template preview feature is disabled in the system configuration.');
             return;
         }
@@ -50,7 +54,7 @@ class EmailPreviewsController extends BaseController
         $this->checkPermission('user_is_ueberuser', 'You do not have permission to access email template previews.');
 
         // Set the current page for navigation highlighting
-        $this->setCurrentPage('email_previews');
+        $this->setCurrentPage('module_email_previews');
         $this->setPageTitle(_('Email Previews'));
 
         $template = $this->getSafeRequestValue('template');

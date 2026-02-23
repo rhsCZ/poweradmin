@@ -20,9 +20,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Poweradmin\Application\Service;
+namespace Poweradmin\Module\EmailPreviews\Service;
 
 use InvalidArgumentException;
+use Poweradmin\Application\Service\EmailTemplateService;
 
 class EmailPreviewService
 {
@@ -104,7 +105,7 @@ class EmailPreviewService
     public function generateCustomPreviews(): array
     {
         $customPreviews = [];
-        $customTemplatePath = __DIR__ . '/../../../templates/emails/custom';
+        $customTemplatePath = __DIR__ . '/../../../../templates/emails/custom';
 
         if (!is_dir($customTemplatePath)) {
             return $customPreviews;
