@@ -4,7 +4,7 @@
  *  See <https://www.poweradmin.org> for more details.
  *
  *  Copyright 2007-2010 Rejo Zenger <rejo@zenger.nl>
- *  Copyright 2010-2025 Poweradmin Development Team
+ *  Copyright 2010-2026 Poweradmin Development Team
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -167,7 +167,7 @@ class MfaSetupController extends BaseController
     private function handleEmailSetup(): void
     {
         $userId = $this->userContextService->getLoggedInUserId() ?? 0;
-        $email = $this->userContextService->getSessionData('email') ?? '';
+        $email = $this->userContextService->getUserEmail() ?? '';
 
         // Check if user has an email address set
         if (empty($email)) {
@@ -355,7 +355,7 @@ class MfaSetupController extends BaseController
         $this->render('mfa_setup.html', [
             'mfa_enabled' => $mfaEnabled,
             'mfa_type' => $mfaType,
-            'email' => $this->userContextService->getSessionData('email') ?? '',
+            'email' => $this->userContextService->getUserEmail() ?? '',
             'mail_service_enabled' => $mailServiceEnabled,
             'email_mfa_enabled' => $emailMfaEnabled,
             'mfa_enforced' => $mfaEnforced,
@@ -366,7 +366,7 @@ class MfaSetupController extends BaseController
     private function displayAppVerification(string $secret): void
     {
         // Get the user's email or username for the authenticator app
-        $email = $this->userContextService->getSessionData('email') ?? '';
+        $email = $this->userContextService->getUserEmail() ?? '';
         $userId = $this->userContextService->getLoggedInUserId() ?? 0;
 
         // Make sure we have a valid email for the QR code
