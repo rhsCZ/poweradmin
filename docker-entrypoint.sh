@@ -683,7 +683,7 @@ return [
         'encryption' => '${PA_SMTP_ENCRYPTION:-tls}',
         'from' => '${PA_MAIL_FROM:-}',
         'from_name' => '${PA_MAIL_FROM_NAME:-}',
-        'return_path' => '${PA_MAIL_RETURN_PATH:-}',
+        'return_path' => '${PA_MAIL_RETURN_PATH:-poweradmin@example.com}',
         'auth' => ${mail_auth},
         'sendmail_path' => '${PA_SENDMAIL_PATH:-/usr/sbin/sendmail -bs}',
     ],
