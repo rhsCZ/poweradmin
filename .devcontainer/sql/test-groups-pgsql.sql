@@ -10,6 +10,83 @@
 -- Usage: docker exec -i -e PGPASSWORD=poweradmin postgres psql -U pdns -d pdns < test-groups-pgsql.sql
 
 -- =============================================================================
+-- GROUP PERMISSION TEMPLATES
+-- =============================================================================
+
+-- Restore group permission templates (6-10) deleted by --clean
+INSERT INTO perm_templ (id, name, descr, template_type) VALUES
+    (6, 'Administrators', 'Full administrative access for group members.', 'group')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, descr = EXCLUDED.descr, template_type = EXCLUDED.template_type;
+
+INSERT INTO perm_templ (id, name, descr, template_type) VALUES
+    (7, 'Zone Managers', 'Full zone management for group members.', 'group')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, descr = EXCLUDED.descr, template_type = EXCLUDED.template_type;
+
+INSERT INTO perm_templ (id, name, descr, template_type) VALUES
+    (8, 'Editors', 'Edit zone records (no SOA/NS) for group members.', 'group')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, descr = EXCLUDED.descr, template_type = EXCLUDED.template_type;
+
+INSERT INTO perm_templ (id, name, descr, template_type) VALUES
+    (9, 'Viewers', 'Read-only zone access for group members.', 'group')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, descr = EXCLUDED.descr, template_type = EXCLUDED.template_type;
+
+INSERT INTO perm_templ (id, name, descr, template_type) VALUES
+    (10, 'Guests', 'Temporary group with no permissions. Suitable for users awaiting approval.', 'group')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, descr = EXCLUDED.descr, template_type = EXCLUDED.template_type;
+
+-- Restore group permission template items
+INSERT INTO perm_templ_items (templ_id, perm_id)
+SELECT 6, id FROM perm_items WHERE name = 'user_is_ueberuser'
+  AND NOT EXISTS (SELECT 1 FROM perm_templ_items pti WHERE pti.templ_id = 6 AND pti.perm_id = perm_items.id);
+
+INSERT INTO perm_templ_items (templ_id, perm_id)
+SELECT 7, id FROM perm_items WHERE name IN (
+    'zone_master_add', 'zone_slave_add', 'zone_content_view_own', 'zone_content_edit_own',
+    'zone_meta_edit_own', 'search', 'user_edit_own', 'zone_templ_add', 'zone_templ_edit',
+    'zone_delete_own', 'api_manage_keys'
+) AND NOT EXISTS (SELECT 1 FROM perm_templ_items pti WHERE pti.templ_id = 7 AND pti.perm_id = perm_items.id);
+
+INSERT INTO perm_templ_items (templ_id, perm_id)
+SELECT 8, id FROM perm_items WHERE name IN (
+    'zone_content_view_own', 'search', 'user_edit_own', 'zone_content_edit_own_as_client'
+) AND NOT EXISTS (SELECT 1 FROM perm_templ_items pti WHERE pti.templ_id = 8 AND pti.perm_id = perm_items.id);
+
+INSERT INTO perm_templ_items (templ_id, perm_id)
+SELECT 9, id FROM perm_items WHERE name IN (
+    'zone_content_view_own', 'search'
+) AND NOT EXISTS (SELECT 1 FROM perm_templ_items pti WHERE pti.templ_id = 9 AND pti.perm_id = perm_items.id);
+
+-- Template 10 (Guests) has no permissions
+
+SELECT setval('perm_templ_id_seq', GREATEST((SELECT MAX(id) FROM perm_templ), 10));
+SELECT setval('perm_templ_items_id_seq', COALESCE((SELECT MAX(id) FROM perm_templ_items), 1));
+
+-- =============================================================================
+-- DEFAULT USER GROUPS
+-- =============================================================================
+
+-- Restore default user groups deleted by --clean
+INSERT INTO user_groups (id, name, description, perm_templ, created_by) VALUES
+    (1, 'Administrators', 'Full administrative access to all system functions.', 6, NULL)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
+
+INSERT INTO user_groups (id, name, description, perm_templ, created_by) VALUES
+    (2, 'Zone Managers', 'Full zone management including creation, editing, and deletion.', 7, NULL)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
+
+INSERT INTO user_groups (id, name, description, perm_templ, created_by) VALUES
+    (3, 'Editors', 'Edit zone records but cannot modify SOA and NS records.', 8, NULL)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
+
+INSERT INTO user_groups (id, name, description, perm_templ, created_by) VALUES
+    (4, 'Viewers', 'Read-only access to zones with search capability.', 9, NULL)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
+
+INSERT INTO user_groups (id, name, description, perm_templ, created_by) VALUES
+    (5, 'Guests', 'Temporary group with no permissions. Suitable for users awaiting approval.', 10, NULL)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
+
+-- =============================================================================
 -- GROUP MEMBERSHIPS
 -- =============================================================================
 

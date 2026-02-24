@@ -15,6 +15,61 @@
 ATTACH DATABASE '/data/pdns.db' AS pdns;
 
 -- =============================================================================
+-- GROUP PERMISSION TEMPLATES
+-- =============================================================================
+
+-- Restore group permission templates (6-10) deleted by --clean
+INSERT OR REPLACE INTO "perm_templ" ("id", "name", "descr", "template_type") VALUES
+    (6, 'Administrators', 'Full administrative access for group members.', 'group');
+INSERT OR REPLACE INTO "perm_templ" ("id", "name", "descr", "template_type") VALUES
+    (7, 'Zone Managers', 'Full zone management for group members.', 'group');
+INSERT OR REPLACE INTO "perm_templ" ("id", "name", "descr", "template_type") VALUES
+    (8, 'Editors', 'Edit zone records (no SOA/NS) for group members.', 'group');
+INSERT OR REPLACE INTO "perm_templ" ("id", "name", "descr", "template_type") VALUES
+    (9, 'Viewers', 'Read-only zone access for group members.', 'group');
+INSERT OR REPLACE INTO "perm_templ" ("id", "name", "descr", "template_type") VALUES
+    (10, 'Guests', 'Temporary group with no permissions. Suitable for users awaiting approval.', 'group');
+
+-- Restore group permission template items
+INSERT OR IGNORE INTO "perm_templ_items" ("templ_id", "perm_id")
+SELECT 6, "id" FROM "perm_items" WHERE "name" = 'user_is_ueberuser';
+
+INSERT OR IGNORE INTO "perm_templ_items" ("templ_id", "perm_id")
+SELECT 7, "id" FROM "perm_items" WHERE "name" IN (
+    'zone_master_add', 'zone_slave_add', 'zone_content_view_own', 'zone_content_edit_own',
+    'zone_meta_edit_own', 'search', 'user_edit_own', 'zone_templ_add', 'zone_templ_edit',
+    'zone_delete_own', 'api_manage_keys'
+);
+
+INSERT OR IGNORE INTO "perm_templ_items" ("templ_id", "perm_id")
+SELECT 8, "id" FROM "perm_items" WHERE "name" IN (
+    'zone_content_view_own', 'search', 'user_edit_own', 'zone_content_edit_own_as_client'
+);
+
+INSERT OR IGNORE INTO "perm_templ_items" ("templ_id", "perm_id")
+SELECT 9, "id" FROM "perm_items" WHERE "name" IN (
+    'zone_content_view_own', 'search'
+);
+
+-- Template 10 (Guests) has no permissions
+
+-- =============================================================================
+-- DEFAULT USER GROUPS
+-- =============================================================================
+
+-- Restore default user groups deleted by --clean
+INSERT OR REPLACE INTO "user_groups" ("id", "name", "description", "perm_templ", "created_by") VALUES
+    (1, 'Administrators', 'Full administrative access to all system functions.', 6, NULL);
+INSERT OR REPLACE INTO "user_groups" ("id", "name", "description", "perm_templ", "created_by") VALUES
+    (2, 'Zone Managers', 'Full zone management including creation, editing, and deletion.', 7, NULL);
+INSERT OR REPLACE INTO "user_groups" ("id", "name", "description", "perm_templ", "created_by") VALUES
+    (3, 'Editors', 'Edit zone records but cannot modify SOA and NS records.', 8, NULL);
+INSERT OR REPLACE INTO "user_groups" ("id", "name", "description", "perm_templ", "created_by") VALUES
+    (4, 'Viewers', 'Read-only access to zones with search capability.', 9, NULL);
+INSERT OR REPLACE INTO "user_groups" ("id", "name", "description", "perm_templ", "created_by") VALUES
+    (5, 'Guests', 'Temporary group with no permissions. Suitable for users awaiting approval.', 10, NULL);
+
+-- =============================================================================
 -- GROUP MEMBERSHIPS
 -- =============================================================================
 
