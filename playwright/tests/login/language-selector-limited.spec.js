@@ -26,6 +26,9 @@ const EXCLUDED_LANGUAGES = [
 ];
 
 test.describe('Language Selector - Limited Configuration', () => {
+  const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
+  test.skip(!baseUrl.includes('8082'), 'This test requires SQLite instance (port 8082) with limited languages configured');
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
   });

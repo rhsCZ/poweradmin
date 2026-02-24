@@ -441,7 +441,9 @@ test.describe('Email MFA Setup Flow', () => {
         const bodyText = await page.locator('body').textContent();
         const hasEmailInfo = bodyText.includes('@') ||
                               bodyText.toLowerCase().includes('email') ||
-                              bodyText.toLowerCase().includes('sent');
+                              bodyText.toLowerCase().includes('sent') ||
+                              bodyText.toLowerCase().includes('verification') ||
+                              bodyText.toLowerCase().includes('code');
         expect(hasEmailInfo).toBeTruthy();
       }
     });

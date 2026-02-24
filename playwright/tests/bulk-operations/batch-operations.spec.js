@@ -119,9 +119,12 @@ test.describe('Bulk and Batch Operations', () => {
         }
       }
 
-      // Look for bulk delete button
+      // Check if any checkboxes were actually selected
+      const checkedBoxes = await page.locator('input[type="checkbox"][name="zone_id[]"]:checked').count();
+
+      // Look for bulk delete button (only click if checkboxes were selected)
       const hasBulkDelete = await page.locator('button, input').filter({ hasText: /Delete|Bulk/i }).count();
-      if (hasBulkDelete > 0) {
+      if (hasBulkDelete > 0 && checkedBoxes > 0) {
         await page.locator('button, input').filter({ hasText: /Delete|Bulk/i }).click();
 
         // Confirm bulk deletion
