@@ -77,10 +77,11 @@ clean_mysql() {
     docker exec -i "$MYSQL_CONTAINER" mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" << 'EOSQL'
 USE poweradmin;
 
--- Delete group-related data (keep default groups from schema)
+-- Delete group-related data
 DELETE FROM zones_groups;
 DELETE FROM user_group_members;
 DELETE FROM log_groups;
+DELETE FROM user_groups;
 
 -- Delete zone template associations and sync data
 DELETE FROM zone_template_sync;
@@ -142,10 +143,11 @@ clean_pgsql() {
     fi
 
     docker exec -i -e PGPASSWORD="$PGSQL_PASSWORD" "$PGSQL_CONTAINER" psql -U "$PGSQL_USER" -d "$PGSQL_DATABASE" << 'EOSQL'
--- Delete group-related data (keep default groups from schema)
+-- Delete group-related data
 DELETE FROM zones_groups;
 DELETE FROM user_group_members;
 DELETE FROM log_groups;
+DELETE FROM user_groups;
 
 -- Delete zone template associations and sync data
 DELETE FROM zone_template_sync;
@@ -203,7 +205,7 @@ SELECT setval('zone_templ_records_id_seq', 1);
 SELECT setval('records_zone_templ_id_seq', 1);
 SELECT setval('log_users_id_seq1', 1);
 SELECT setval('log_zones_id_seq1', 1);
-SELECT setval('log_groups_id_seq', 1);
+SELECT setval('log_groups_id_seq1', 1);
 SELECT setval('api_keys_id_seq', 1);
 SELECT setval('user_mfa_id_seq', 1);
 SELECT setval('login_attempts_id_seq', 1);
@@ -227,10 +229,11 @@ clean_sqlite() {
 -- Attach PowerDNS database
 ATTACH DATABASE '/data/pdns.db' AS pdns;
 
--- Delete group-related data (keep default groups from schema)
+-- Delete group-related data
 DELETE FROM zones_groups;
 DELETE FROM user_group_members;
 DELETE FROM log_groups;
+DELETE FROM user_groups;
 
 -- Delete zone template associations and sync data
 DELETE FROM zone_template_sync;
