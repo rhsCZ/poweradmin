@@ -131,6 +131,7 @@ class RecordSearch extends BaseSearch
         }
 
         // Per-record comments via linking table, with fallback to RRset-based comments for legacy data
+        // FIXME: SQLite does not support outer table references in ORDER BY of correlated subqueries
         $links_table = 'record_comment_links';
         $commentSelect = '';
         if ($iface_record_comments) {

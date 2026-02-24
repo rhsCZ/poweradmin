@@ -191,6 +191,8 @@ class RecordRepository implements RecordRepositoryInterface
         }
 
         // Per-record comments via linking table, with fallback to RRset-based comments for legacy data
+        // FIXME: SQLite does not support outer table references in ORDER BY of correlated subqueries,
+        // causing "no such column: records.id" errors. Use COALESCE with two subqueries instead.
         $links_table = 'record_comment_links';
         $query = "SELECT $records_table.*,
             " . ($fetchComments ? "(
@@ -555,6 +557,7 @@ class RecordRepository implements RecordRepositoryInterface
         }
 
         // Per-record comments via linking table, with fallback to RRset-based comments for legacy data
+        // FIXME: SQLite does not support outer table references in ORDER BY of correlated subqueries
         $links_table = 'record_comment_links';
         $query = "SELECT $records_table.id, $records_table.domain_id, $records_table.name, $records_table.type,
                  $records_table.content, $records_table.ttl, $records_table.prio, $records_table.disabled, $records_table.auth";
