@@ -80,12 +80,15 @@ CREATE INDEX IF NOT EXISTS "idx_zones_groups_group" ON "zones_groups"("group_id"
 
 -- Table: log_groups
 -- Description: Audit log for group operations (create, update, delete, member/zone changes)
+CREATE SEQUENCE IF NOT EXISTS log_groups_id_seq1 INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1;
+
 CREATE TABLE IF NOT EXISTS "log_groups" (
-    "id" SERIAL PRIMARY KEY,
+    "id" integer DEFAULT nextval('log_groups_id_seq1') NOT NULL,
     "event" VARCHAR(2048) NOT NULL,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "priority" INTEGER NOT NULL,
-    "group_id" INTEGER DEFAULT NULL
+    "group_id" INTEGER DEFAULT NULL,
+    CONSTRAINT "log_groups_pkey" PRIMARY KEY ("id")
 );
 
 CREATE INDEX IF NOT EXISTS "idx_log_groups_group_id" ON "log_groups"("group_id");
