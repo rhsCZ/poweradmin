@@ -506,6 +506,27 @@ generate_config() {
     local user_agreement_enabled=$(echo "${PA_USER_AGREEMENT_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
     local user_agreement_require_on_change=$(echo "${PA_USER_AGREEMENT_REQUIRE_ON_CHANGE:-true}" | tr '[:upper:]' '[:lower:]')
 
+    # Convert interface boolean values to lowercase
+    local show_add_record_form=$(echo "${PA_SHOW_ADD_RECORD_FORM:-false}" | tr '[:upper:]' '[:lower:]')
+    local show_record_edit_button=$(echo "${PA_SHOW_RECORD_EDIT_BUTTON:-false}" | tr '[:upper:]' '[:lower:]')
+    local show_record_delete_button=$(echo "${PA_SHOW_RECORD_DELETE_BUTTON:-false}" | tr '[:upper:]' '[:lower:]')
+    local show_forward_zone_associations=$(echo "${PA_SHOW_FORWARD_ZONE_ASSOCIATIONS:-true}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert mail boolean values to lowercase
+    local mail_auth=$(echo "${PA_SMTP_AUTH:-false}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert LDAP boolean values to lowercase
+    local ldap_debug=$(echo "${PA_LDAP_DEBUG:-false}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert misc boolean values to lowercase
+    local display_stats=$(echo "${PA_DISPLAY_STATS:-false}" | tr '[:upper:]' '[:lower:]')
+    local record_comments_sync=$(echo "${PA_RECORD_COMMENTS_SYNC:-false}" | tr '[:upper:]' '[:lower:]')
+    local display_errors=$(echo "${PA_DISPLAY_ERRORS:-false}" | tr '[:upper:]' '[:lower:]')
+    local show_generated_passwords=$(echo "${PA_SHOW_GENERATED_PASSWORDS:-true}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert API boolean values to lowercase
+    local api_log_requests=$(echo "${PA_API_LOG_REQUESTS:-false}" | tr '[:upper:]' '[:lower:]')
+
     # Convert OIDC boolean values to lowercase
     local oidc_enabled=$(echo "${PA_OIDC_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
     local oidc_auto_provision=$(echo "${PA_OIDC_AUTO_PROVISION:-true}" | tr '[:upper:]' '[:lower:]')
@@ -543,6 +564,12 @@ generate_config() {
     local reverse_record_types="null"
     if [ -n "${PA_DNS_REVERSE_RECORD_TYPES}" ]; then
         reverse_record_types="['$(echo "${PA_DNS_REVERSE_RECORD_TYPES}" | sed "s/,/','/g")']"
+    fi
+
+    # Process custom TLDs - convert comma-separated values to PHP array format or empty array
+    local custom_tlds="[]"
+    if [ -n "${PA_DNS_CUSTOM_TLDS}" ]; then
+        custom_tlds="['$(echo "${PA_DNS_CUSTOM_TLDS}" | sed "s/,/','/g")']"
     fi
 
     # Ensure parent directory exists for custom config paths
@@ -588,6 +615,7 @@ return [
         'third_level_check' => ${dns_third_level_check},
         'txt_auto_quote' => ${dns_txt_auto_quote},
         'prevent_duplicate_ptr' => ${dns_prevent_duplicate_ptr},
+        'custom_tlds' => ${custom_tlds},
         'domain_record_types' => ${domain_record_types},
         'reverse_record_types' => ${reverse_record_types},
     ],
@@ -655,6 +683,9 @@ return [
         'encryption' => '${PA_SMTP_ENCRYPTION:-tls}',
         'from' => '${PA_MAIL_FROM:-}',
         'from_name' => '${PA_MAIL_FROM_NAME:-}',
+        'return_path' => '${PA_MAIL_RETURN_PATH:-}',
+        'auth' => ${mail_auth},
+        'sendmail_path' => '${PA_SENDMAIL_PATH:-/usr/sbin/sendmail -bs}',
     ],
     'notifications' => [
         'zone_access_enabled' => ${notification_zone_access},
@@ -670,7 +701,11 @@ return [
         'style' => '${PA_STYLE:-light}',
         'theme_base_path' => '${PA_THEME_BASE_PATH:-templates}',
         'base_url_prefix' => '${PA_BASE_URL_PREFIX:-}',
+        'application_url' => '${PA_APPLICATION_URL:-}',
         'show_record_id' => ${show_record_id},
+        'show_add_record_form' => ${show_add_record_form},
+        'show_record_edit_button' => ${show_record_edit_button},
+        'show_record_delete_button' => ${show_record_delete_button},
         'position_record_form_top' => ${position_record_form_top},
         'position_save_button_top' => ${position_save_button_top},
         'show_zone_comments' => ${show_zone_comments},
@@ -685,11 +720,15 @@ return [
         'add_domain_record' => ${add_domain_record},
         'display_hostname_only' => ${display_hostname_only},
         'enable_consistency_checks' => ${enable_consistency_checks},
+        'show_forward_zone_associations' => ${show_forward_zone_associations},
     ],
     'api' => [
         'enabled' => ${api_enabled},
         'basic_auth_enabled' => ${api_basic_auth_enabled},
+        'basic_auth_realm' => '${PA_API_BASIC_AUTH_REALM:-Poweradmin API}',
+        'log_requests' => ${api_log_requests},
         'docs_enabled' => ${api_docs_enabled},
+        'max_keys_per_user' => ${PA_API_MAX_KEYS_PER_USER:-5},
     ],
     'user_agreement' => [
         'enabled' => ${user_agreement_enabled},
@@ -697,6 +736,7 @@ return [
         'require_on_version_change' => ${user_agreement_require_on_change},
     ],
     'pdns_api' => [
+        'display_name' => '${PA_PDNS_DISPLAY_NAME:-PowerDNS}',
         'url' => '${PA_PDNS_API_URL:-}',
         'key' => '${PA_PDNS_API_KEY:-}',
         'server_name' => '${PA_PDNS_SERVER_NAME:-localhost}',
@@ -705,10 +745,15 @@ return [
     ],
     'ldap' => [
         'enabled' => ${ldap_enabled},
+        'debug' => ${ldap_debug},
         'uri' => '${PA_LDAP_URI:-}',
         'base_dn' => '${PA_LDAP_BASE_DN:-}',
         'bind_dn' => '${PA_LDAP_BIND_DN:-}',
         'bind_password' => '${PA_LDAP_BIND_PASSWORD:-}',
+        'user_attribute' => '${PA_LDAP_USER_ATTRIBUTE:-uid}',
+        'protocol_version' => ${PA_LDAP_PROTOCOL_VERSION:-3},
+        'search_filter' => '${PA_LDAP_SEARCH_FILTER:-}',
+        'session_cache_timeout' => ${PA_LDAP_SESSION_CACHE_TIMEOUT:-300},
     ],
     'logging' => [
         'type' => '${PA_LOGGING_TYPE:-null}',
@@ -719,7 +764,12 @@ return [
         'syslog_facility' => ${PA_LOGGING_SYSLOG_FACILITY:-LOG_USER},
     ],
     'misc' => [
+        'display_stats' => ${display_stats},
         'timezone' => '${PA_TIMEZONE:-UTC}',
+        'record_comments_sync' => ${record_comments_sync},
+        'edit_conflict_resolution' => '${PA_EDIT_CONFLICT_RESOLUTION:-last_writer_wins}',
+        'display_errors' => ${display_errors},
+        'show_generated_passwords' => ${show_generated_passwords},
     ],
     'oidc' => [
         'enabled' => ${oidc_enabled},

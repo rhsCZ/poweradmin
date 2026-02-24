@@ -185,6 +185,7 @@ docker run -d --name poweradmin -p 80:80 \
 | `PA_DNS_THIRD_LEVEL_CHECK` | Prevent third-level domain creation | `false` | No |
 | `PA_DNS_TXT_AUTO_QUOTE` | Automatically quote TXT records | `false` | No |
 | `PA_DNS_PREVENT_DUPLICATE_PTR` | Prevent duplicate PTR records in batch operations | `true` | No |
+| `PA_DNS_CUSTOM_TLDS` | Comma-separated custom TLDs for CNAME targets (e.g., `dn42,home,internal`) | Empty | No |
 
 ### DNS Record Types
 
@@ -313,6 +314,9 @@ docker run -d --name poweradmin -p 80:80 \
 | `PA_SMTP_ENCRYPTION` | SMTP encryption: `tls`, `ssl`, or empty | `tls` | No |
 | `PA_MAIL_FROM` | Default "from" email address | Empty | No |
 | `PA_MAIL_FROM_NAME` | Default "from" name | Empty | No |
+| `PA_MAIL_RETURN_PATH` | Default "Return-Path" address | Empty | No |
+| `PA_SMTP_AUTH` | Whether SMTP requires authentication | `false` | No |
+| `PA_SENDMAIL_PATH` | Path to sendmail binary | `/usr/sbin/sendmail -bs` | No |
 
 ### Interface Settings
 
@@ -328,12 +332,16 @@ docker run -d --name poweradmin -p 80:80 \
 | `PA_THEME_BASE_PATH` | Base path for theme templates | `templates` | No |
 | `PA_BASE_URL` | Base URL for SAML auto-generation and interface configuration | Empty | No |
 | `PA_BASE_URL_PREFIX` | Base URL prefix for subdirectory deployments | Empty | No |
+| `PA_APPLICATION_URL` | Full application URL for emails and absolute links | Auto-detect | No |
 
 ### Interface UI Elements
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_SHOW_RECORD_ID` | Show record ID column in edit mode | `true` | No |
+| `PA_SHOW_ADD_RECORD_FORM` | Show add record form | `false` | No |
+| `PA_SHOW_RECORD_EDIT_BUTTON` | Show individual edit button per record | `false` | No |
+| `PA_SHOW_RECORD_DELETE_BUTTON` | Show individual delete button per record | `false` | No |
 | `PA_POSITION_RECORD_FORM_TOP` | Position add record form at the top | `true` | No |
 | `PA_POSITION_SAVE_BUTTON_TOP` | Position save button at the top | `false` | No |
 | `PA_SHOW_ZONE_COMMENTS` | Show zone comments | `true` | No |
@@ -348,6 +356,7 @@ docker run -d --name poweradmin -p 80:80 \
 | `PA_ADD_DOMAIN_RECORD` | Enable A/AAAA record checkbox | `true` | No |
 | `PA_DISPLAY_HOSTNAME_ONLY` | Display only hostname in zone edit | `false` | No |
 | `PA_ENABLE_CONSISTENCY_CHECKS` | Enable consistency checks page | `false` | No |
+| `PA_SHOW_FORWARD_ZONE_ASSOCIATIONS` | Show associated forward zones in reverse zone list | `true` | No |
 
 ### API Configuration
 
@@ -355,12 +364,16 @@ docker run -d --name poweradmin -p 80:80 \
 |----------|-------------|---------|----------|
 | `PA_API_ENABLED` | Enable API functionality | `false` | No |
 | `PA_API_BASIC_AUTH_ENABLED` | Enable HTTP Basic Auth for API | `false` | No |
+| `PA_API_BASIC_AUTH_REALM` | Realm name for HTTP Basic Authentication | `Poweradmin API` | No |
+| `PA_API_LOG_REQUESTS` | Log all API requests | `false` | No |
 | `PA_API_DOCS_ENABLED` | Enable API documentation at /api/docs | `false` | No |
+| `PA_API_MAX_KEYS_PER_USER` | Maximum API keys per user (admins unlimited) | `5` | No |
 
 ### PowerDNS API Integration
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
+| `PA_PDNS_DISPLAY_NAME` | PowerDNS display name to identify server | `PowerDNS` | No |
 | `PA_PDNS_API_URL` | PowerDNS API URL (e.g., http://127.0.0.1:8081) | Empty | No |
 | `PA_PDNS_API_KEY` | PowerDNS API key | Empty | No |
 | `PA_PDNS_SERVER_NAME` | PowerDNS server name for API calls | `localhost` | No |
@@ -370,10 +383,15 @@ docker run -d --name poweradmin -p 80:80 \
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_LDAP_ENABLED` | Enable LDAP authentication | `false` | No |
+| `PA_LDAP_DEBUG` | Enable LDAP debug logging | `false` | No |
 | `PA_LDAP_URI` | LDAP server URI | Empty | No |
 | `PA_LDAP_BASE_DN` | Base DN where users are stored | Empty | No |
 | `PA_LDAP_BIND_DN` | Bind DN for LDAP authentication | Empty | No |
 | `PA_LDAP_BIND_PASSWORD` | LDAP bind password | Empty | No |
+| `PA_LDAP_USER_ATTRIBUTE` | User attribute (`uid` for OpenLDAP, `sAMAccountName` for AD) | `uid` | No |
+| `PA_LDAP_PROTOCOL_VERSION` | LDAP protocol version | `3` | No |
+| `PA_LDAP_SEARCH_FILTER` | Additional LDAP search filter | Empty | No |
+| `PA_LDAP_SESSION_CACHE_TIMEOUT` | Session cache timeout in seconds (0 to disable) | `300` | No |
 
 ### OIDC (OpenID Connect) Authentication
 
@@ -630,6 +648,11 @@ docker run -d \
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_TIMEZONE` | Default timezone | `UTC` | No |
+| `PA_DISPLAY_STATS` | Display memory usage and execution time | `false` | No |
+| `PA_RECORD_COMMENTS_SYNC` | Enable bidirectional comment sync between A and PTR records | `false` | No |
+| `PA_EDIT_CONFLICT_RESOLUTION` | Edit conflict resolution: `last_writer_wins`, `only_latest_version`, `3_way_merge` | `last_writer_wins` | No |
+| `PA_DISPLAY_ERRORS` | Display PHP errors (false for production) | `false` | No |
+| `PA_SHOW_GENERATED_PASSWORDS` | Show generated passwords on user creation | `true` | No |
 
 ### Configuration Override
 
