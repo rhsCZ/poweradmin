@@ -43,6 +43,58 @@ function extractIdFromUrl(href) {
 }
 
 /**
+ * Find zone ID using the search page
+ * Useful when the zone is not visible on the first page of zone list
+ * or when the displayed name differs from the arpa format (IPv6 zones)
+ *
+ * @param {import('@playwright/test').Page} page - Playwright page object
+ * @param {string} zoneName - Zone name to search for
+ * @returns {Promise<string|null>} - Zone ID or null if not found
+ */
+async function findZoneIdBySearch(page, zoneName) {
+  await page.goto('/search');
+  await page.waitForLoadState('networkidle');
+
+  const queryInput = page.locator('#query');
+  if (await queryInput.count() === 0) return null;
+
+  // Search with the full zone name - the database stores arpa format
+  await queryInput.fill(zoneName);
+
+  // Ensure "Zones" checkbox is checked
+  const zonesCheck = page.locator('#zones_check');
+  if (await zonesCheck.count() > 0 && !(await zonesCheck.isChecked())) {
+    await zonesCheck.check();
+  }
+
+  // Submit search
+  await page.locator('button[name="do_search"]').click();
+  await page.waitForLoadState('networkidle');
+
+  // Search results show zone name as text in <td> and edit link in the same <tr>
+  // Verify the zone name matches before returning the ID
+  const resultRows = page.locator('table tbody tr');
+  const rowCount = await resultRows.count();
+
+  for (let i = 0; i < rowCount; i++) {
+    const row = resultRows.nth(i);
+    const rowText = (await row.textContent()) || '';
+
+    // Check if this row contains our zone name (case-insensitive)
+    if (rowText.toLowerCase().includes(zoneName.toLowerCase())) {
+      const editLink = row.locator('a[href*="/zones/"][href*="/edit"]').first();
+      if (await editLink.count() > 0) {
+        const href = await editLink.getAttribute('href');
+        const id = extractIdFromUrl(href);
+        if (id) return id;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
  * Find zone ID by zone name
  *
  * @param {import('@playwright/test').Page} page - Playwright page object
@@ -53,7 +105,7 @@ export async function findZoneIdByName(page, zoneName) {
   // Determine which zone list to check based on zone name
   // Use letter=all for forward zones to ensure we find zones starting with any letter
   const listPage = isReverseZone(zoneName)
-    ? '/zones/reverse?letter=all'
+    ? '/zones/reverse?reverse_type=all'
     : '/zones/forward?letter=all';
 
   await page.goto(listPage);
@@ -73,18 +125,18 @@ export async function findZoneIdByName(page, zoneName) {
     }
   }
 
-  if (await row.count() === 0) {
-    return null;
+  if (await row.count() > 0) {
+    // Find edit link and extract ID (modern URLs: /zones/123/edit)
+    const editLink = row.locator('a[href*="/edit"]').first();
+    if (await editLink.count() > 0) {
+      const href = await editLink.getAttribute('href');
+      const id = extractIdFromUrl(href);
+      if (id) return id;
+    }
   }
 
-  // Find edit link and extract ID (modern URLs: /zones/123/edit)
-  const editLink = row.locator('a[href*="/edit"]').first();
-  if (await editLink.count() === 0) {
-    return null;
-  }
-
-  const href = await editLink.getAttribute('href');
-  return extractIdFromUrl(href);
+  // Fallback: use search page to find zone (handles pagination and display name differences)
+  return await findZoneIdBySearch(page, zoneName);
 }
 
 /**
