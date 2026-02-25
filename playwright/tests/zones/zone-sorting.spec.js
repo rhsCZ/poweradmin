@@ -141,7 +141,7 @@ test.describe('Zone List Sorting', () => {
   test.describe('Reverse Zones Sorting', () => {
     test('should allow sorting reverse zones by name', async ({ page }) => {
       await loginAndWaitForDashboard(page, users.admin.username, users.admin.password);
-      await page.goto('/zones/reverse?letter=all&zone_sort_by=name&zone_sort_by_direction=ASC');
+      await page.goto('/zones/reverse?reverse_type=all&zone_sort_by=name&zone_sort_by_direction=ASC');
       await page.waitForLoadState('networkidle');
 
       const bodyText = await page.locator('body').textContent();
@@ -150,7 +150,7 @@ test.describe('Zone List Sorting', () => {
 
     test('should allow sorting reverse zones by owner', async ({ page }) => {
       await loginAndWaitForDashboard(page, users.admin.username, users.admin.password);
-      await page.goto('/zones/reverse?letter=all&zone_sort_by=owner&zone_sort_by_direction=ASC');
+      await page.goto('/zones/reverse?reverse_type=all&zone_sort_by=owner&zone_sort_by_direction=ASC');
       await page.waitForLoadState('networkidle');
 
       const bodyText = await page.locator('body').textContent();

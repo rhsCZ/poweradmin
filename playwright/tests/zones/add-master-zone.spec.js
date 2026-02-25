@@ -71,7 +71,7 @@ test.describe('Master Zone Management', () => {
     expect(bodyText).not.toMatch(/fatal|exception/i);
 
     // Verify zone was created
-    await page.goto('/zones/reverse?letter=all');
+    await page.goto('/zones/reverse?reverse_type=all');
     await page.waitForLoadState('networkidle');
 
     const zoneRow = page.locator(`tr:has-text("${reverseZone}")`);
@@ -154,7 +154,7 @@ test.describe('Master Zone Management', () => {
   });
 
   test('should delete a reverse zone successfully', async ({ page }) => {
-    await page.goto('/zones/reverse?letter=all');
+    await page.goto('/zones/reverse?reverse_type=all');
     await page.waitForLoadState('networkidle');
 
     const zoneRow = page.locator(`tr:has-text("${reverseZone}")`);
