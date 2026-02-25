@@ -3,9 +3,6 @@ import { loginAndWaitForDashboard } from '../../helpers/auth.js';
 import users from '../../fixtures/users.json' assert { type: 'json' };
 
 test.describe('Search Functionality', () => {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
-  // FIXME: SQLite correlated subquery ORDER BY limitation causes "no such column: records.id"
-  test.skip(baseUrl.includes('8082'), 'SQLite: correlated subquery ORDER BY limitation with record comments');
   // Use unique zone names to avoid conflicts
   const timestamp = Date.now();
   const testZones = [

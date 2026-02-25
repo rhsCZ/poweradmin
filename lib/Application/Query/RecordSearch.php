@@ -131,21 +131,31 @@ class RecordSearch extends BaseSearch
         }
 
         // Per-record comments via linking table, with fallback to RRset-based comments for legacy data
-        // FIXME: SQLite does not support outer table references in ORDER BY of correlated subqueries
+        // Uses COALESCE with two subqueries to avoid ORDER BY with outer table
+        // references which SQLite does not support in correlated subqueries.
         $links_table = 'record_comment_links';
         $commentSelect = '';
         if ($iface_record_comments) {
-            $commentSelect = ", (
-                SELECT c.comment
-                FROM $comments_table c
-                LEFT JOIN $links_table rcl ON rcl.comment_id = c.id
-                WHERE (rcl.record_id = $records_table.id)
-                   OR (rcl.record_id IS NULL
-                       AND c.domain_id = $records_table.domain_id
-                       AND c.name = $records_table.name
-                       AND c.type = $records_table.type)
-                ORDER BY CASE WHEN rcl.record_id = $records_table.id THEN 0 ELSE 1 END
-                LIMIT 1
+            $commentSelect = ", COALESCE(
+                (
+                    SELECT c.comment
+                    FROM $links_table rcl
+                    JOIN $comments_table c ON c.id = rcl.comment_id
+                    WHERE rcl.record_id = $records_table.id
+                    LIMIT 1
+                ),
+                (
+                    SELECT c.comment
+                    FROM $comments_table c
+                    WHERE c.domain_id = $records_table.domain_id
+                      AND c.name = $records_table.name
+                      AND c.type = $records_table.type
+                      AND NOT EXISTS (
+                          SELECT 1 FROM $links_table rcl2
+                          WHERE rcl2.comment_id = c.id
+                      )
+                    LIMIT 1
+                )
             ) AS comment";
         }
 

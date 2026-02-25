@@ -126,8 +126,11 @@ export async function findZoneIdByName(page, zoneName) {
   }
 
   if (await row.count() > 0) {
-    // Find edit link and extract ID (modern URLs: /zones/123/edit)
-    const editLink = row.locator('a[href*="/edit"]').first();
+    // For reverse zones, use data-testid to target Actions column edit buttons,
+    // not "Associated Forward Zones" links which also match /zones/*/edit
+    const editLink = isReverseZone(zoneName)
+      ? row.locator('a[data-testid^="edit-zone-"]').first()
+      : row.locator('a[href*="/edit"]').first();
     if (await editLink.count() > 0) {
       const href = await editLink.getAttribute('href');
       const id = extractIdFromUrl(href);

@@ -29,7 +29,9 @@ async function getForwardZoneId(page) {
 // Helper to get a reverse zone ID for testing
 async function getReverseZoneId(page) {
   await page.goto('/zones/reverse?reverse_type=all');
-  const editLink = page.locator('a[href*="/zones/"][href*="/edit"]').first();
+  // Use data-testid to target edit buttons in the Actions column,
+  // not the "Associated Forward Zones" links which also match /zones/*/edit
+  const editLink = page.locator('a[data-testid^="edit-zone-"]').first();
   if (await editLink.count() > 0) {
     const href = await editLink.getAttribute('href');
     const match = href.match(/\/zones\/(\d+)\/edit/);

@@ -13,9 +13,6 @@ import { loginAndWaitForDashboard } from '../../helpers/auth.js';
 import users from '../../fixtures/users.json' assert { type: 'json' };
 
 test.describe('Search Edge Cases', () => {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
-  // FIXME: SQLite correlated subquery ORDER BY limitation causes "no such column: records.id"
-  test.skip(baseUrl.includes('8082'), 'SQLite: correlated subquery ORDER BY limitation with record comments');
   test.describe('Clear Search Field (Regression #815)', () => {
     test('should not crash when clearing search field', async ({ page }) => {
       await loginAndWaitForDashboard(page, users.admin.username, users.admin.password);

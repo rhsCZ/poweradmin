@@ -18,9 +18,6 @@ import users from '../../fixtures/users.json' assert { type: 'json' };
  * In both cases, the record name should NOT contain double dots (..) which was the bug symptom.
  */
 test.describe('Record Edit - Zone Suffix Stripping (Issue #958)', () => {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
-  // FIXME: SQLite correlated subquery ORDER BY limitation causes "no such column: records.id"
-  test.skip(baseUrl.includes('8082'), 'SQLite: correlated subquery ORDER BY limitation with record comments');
   test.beforeEach(async ({ page }) => {
     await loginAndWaitForDashboard(page, users.admin.username, users.admin.password);
   });

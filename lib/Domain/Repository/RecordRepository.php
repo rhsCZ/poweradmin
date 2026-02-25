@@ -191,21 +191,31 @@ class RecordRepository implements RecordRepositoryInterface
         }
 
         // Per-record comments via linking table, with fallback to RRset-based comments for legacy data
-        // FIXME: SQLite does not support outer table references in ORDER BY of correlated subqueries,
-        // causing "no such column: records.id" errors. Use COALESCE with two subqueries instead.
+        // Uses COALESCE with two subqueries: first checks for per-record linked comment,
+        // then falls back to RRset-based comment. This avoids ORDER BY with outer table
+        // references which SQLite does not support in correlated subqueries.
         $links_table = 'record_comment_links';
         $query = "SELECT $records_table.*,
-            " . ($fetchComments ? "(
-                SELECT c.comment
-                FROM $comments_table c
-                LEFT JOIN $links_table rcl ON rcl.comment_id = c.id
-                WHERE (rcl.record_id = $records_table.id)
-                   OR (rcl.record_id IS NULL
-                       AND c.domain_id = $records_table.domain_id
-                       AND c.name = $records_table.name
-                       AND c.type = $records_table.type)
-                ORDER BY CASE WHEN rcl.record_id = $records_table.id THEN 0 ELSE 1 END
-                LIMIT 1
+            " . ($fetchComments ? "COALESCE(
+                (
+                    SELECT c.comment
+                    FROM $links_table rcl
+                    JOIN $comments_table c ON c.id = rcl.comment_id
+                    WHERE rcl.record_id = $records_table.id
+                    LIMIT 1
+                ),
+                (
+                    SELECT c.comment
+                    FROM $comments_table c
+                    WHERE c.domain_id = $records_table.domain_id
+                      AND c.name = $records_table.name
+                      AND c.type = $records_table.type
+                      AND NOT EXISTS (
+                          SELECT 1 FROM $links_table rcl2
+                          WHERE rcl2.comment_id = c.id
+                      )
+                    LIMIT 1
+                )
             )" : "NULL") . " AS comment
             FROM $records_table
             WHERE $records_table.domain_id = :domain_id
@@ -557,24 +567,34 @@ class RecordRepository implements RecordRepositoryInterface
         }
 
         // Per-record comments via linking table, with fallback to RRset-based comments for legacy data
-        // FIXME: SQLite does not support outer table references in ORDER BY of correlated subqueries
+        // Uses COALESCE with two subqueries to avoid ORDER BY with outer table
+        // references which SQLite does not support in correlated subqueries.
         $links_table = 'record_comment_links';
         $query = "SELECT $records_table.id, $records_table.domain_id, $records_table.name, $records_table.type,
                  $records_table.content, $records_table.ttl, $records_table.prio, $records_table.disabled, $records_table.auth";
 
-        // Add comment column using subquery if needed
+        // Add comment column using COALESCE: per-record linked comment first, then RRset-based fallback
         if ($include_comments) {
-            $query .= ", (
-                SELECT c.comment
-                FROM $comments_table c
-                LEFT JOIN $links_table rcl ON rcl.comment_id = c.id
-                WHERE (rcl.record_id = $records_table.id)
-                   OR (rcl.record_id IS NULL
-                       AND c.domain_id = $records_table.domain_id
-                       AND c.name = $records_table.name
-                       AND c.type = $records_table.type)
-                ORDER BY CASE WHEN rcl.record_id = $records_table.id THEN 0 ELSE 1 END
-                LIMIT 1
+            $query .= ", COALESCE(
+                (
+                    SELECT c.comment
+                    FROM $links_table rcl
+                    JOIN $comments_table c ON c.id = rcl.comment_id
+                    WHERE rcl.record_id = $records_table.id
+                    LIMIT 1
+                ),
+                (
+                    SELECT c.comment
+                    FROM $comments_table c
+                    WHERE c.domain_id = $records_table.domain_id
+                      AND c.name = $records_table.name
+                      AND c.type = $records_table.type
+                      AND NOT EXISTS (
+                          SELECT 1 FROM $links_table rcl2
+                          WHERE rcl2.comment_id = c.id
+                      )
+                    LIMIT 1
+                )
             ) AS comment";
         }
 

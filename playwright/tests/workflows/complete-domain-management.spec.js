@@ -143,9 +143,7 @@ test.describe('Complete Domain Management Workflow', () => {
     }
   });
 
-  // FIXME: SQLite correlated subquery ORDER BY limitation causes "no such column: records.id"
   test('should handle domain search functionality', async ({ page }) => {
-    test.skip((process.env.BASE_URL || '').includes('8082'), 'SQLite: correlated subquery limitation');
     await page.goto('/search');
     await page.waitForLoadState('networkidle');
 
