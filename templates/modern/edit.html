@@ -24,10 +24,12 @@
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <strong><i class="bi bi-plus-circle me-2"></i>{% trans %}Add new record{% endtrans %}</strong>
         <div>
-            {% if dns_wizards_enabled and not is_reverse_zone %}
-            <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/wizard" class="btn btn-primary btn-sm me-1" title="{% trans %}Guided wizards for DMARC, SPF, DKIM, CAA, TLSA, and SRV records{% endtrans %}">
-                <i class="bi bi-magic me-1 text-white"></i>{% trans %}Record Wizard{% endtrans %}
+            {% if dns_wizard_actions is defined and dns_wizard_actions|length > 0 and not is_reverse_zone %}
+            {% for action in dns_wizard_actions %}
+            <a href="{{ base_url_prefix }}{{ action.url }}" class="btn btn-primary btn-sm me-1" title="{% trans %}Guided wizards for DMARC, SPF, DKIM, CAA, TLSA, and SRV records{% endtrans %}">
+                <i class="bi bi-{{ action.icon }} me-1 text-white"></i>{{ action.label|trans }}
             </a>
+            {% endfor %}
             {% endif %}
             <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/records/add" class="btn btn-primary btn-sm me-1">
                 <i class="bi bi-table me-1 text-white"></i>{% trans %}Multi-record mode{% endtrans %}
@@ -196,10 +198,12 @@
                 <i class="bi bi-plus-circle me-1 text-white"></i>{% trans %}Add record{% endtrans %}
             </a>
             {% endif %}
-            {% if perm_is_godlike and whois_enabled %}
-            <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/whois" class="btn btn-secondary btn-sm">
-                <i class="bi bi-search-heart me-1 text-white"></i>{% trans %}WHOIS{% endtrans %}
+            {% if whois_actions is defined and whois_actions|length > 0 %}
+            {% for action in whois_actions %}
+            <a href="{{ base_url_prefix }}{{ action.url }}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-{{ action.icon }} me-1 text-white"></i>{{ action.label }}
             </a>
+            {% endfor %}
             {% endif %}
             <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/ownership" class="btn btn-secondary btn-sm">
                 <i class="bi bi-people me-1 text-white"></i>{% trans %}Ownership{% endtrans %}
@@ -401,7 +405,7 @@
             {% endif %}
             {% if r['type'] == "SOA" or r['type'] == "NS" and perm_edit == "own_as_client" %}
             <td class="col-sm-2">{{ r['display_name'] is defined ? r['display_name'] : r['name'] }}</td>
-            <td class="text-center"><span class="badge {% if r['type'] == 'SOA' %}bg-dark{% elseif r['type'] == 'NS' %}bg-info{% else %}bg-secondary{% endif %}">{{ r['type'] }}</span></td>
+            <td class="text-center"><span class="badge {{ record_type_class(r['type']) }}">{{ r['type'] }}</span></td>
             <td>{{ r['content'] }}</td>
             <td>-</td>
             <td class="col-sm-1">{{ r['ttl'] }}</td>
@@ -414,7 +418,7 @@
                                         name="record[{{ r['id'] }}][name]" value="{{ r['editable_name'] is defined ? r['editable_name'] : r['name'] }}"></td>
             <td class="text-center">
                 <input type="hidden" name="record[{{ r['id'] }}][type]" value="{{ r['type'] }}">
-                <span class="badge {% if r['type'] == 'A' %}bg-primary{% elseif r['type'] == 'AAAA' %}bg-info{% elseif r['type'] == 'CNAME' %}bg-success{% elseif r['type'] == 'MX' %}bg-warning{% elseif r['type'] == 'TXT' %}bg-secondary{% elseif r['type'] == 'PTR' %}bg-danger{% elseif r['type'] == 'SOA' %}bg-dark{% elseif r['type'] == 'NS' %}bg-info{% else %}bg-secondary{% endif %}">{{ r['type'] }}</span>
+                <span class="badge {{ record_type_class(r['type']) }}">{{ r['type'] }}</span>
             </td>
             <td>
                 <div id="contentInputContainer{{ r['id'] }}">
@@ -511,9 +515,23 @@
         <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/records/bulk" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-file-earmark-text me-1 text-primary"></i>{% trans %}Bulk add{% endtrans %}
         </a>
-        <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/edit?export_csv=1" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-file-earmark-spreadsheet me-1 text-secondary"></i>{% trans %}Export CSV{% endtrans %}
+        {% if import_enabled is defined and import_enabled %}
+        <a href="{{ base_url_prefix }}/tools/zone-import?zone_id={{ zone_id }}&amp;zone_name={{ zone_name }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-upload me-1 text-secondary"></i>{% trans %}Import{% endtrans %}
         </a>
+        {% endif %}
+        {% if export_formats is defined and export_formats|length > 0 %}
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-download me-1 text-secondary"></i>{% trans %}Export{% endtrans %}
+            </button>
+            <ul class="dropdown-menu">
+                {% for format in export_formats %}
+                <li><a class="dropdown-item" href="{{ base_url_prefix }}{{ format.url }}"><i class="bi bi-{{ format.icon }} me-2"></i>{{ format.label }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
         {% if not is_reverse_zone and perm_edit != "none" %}
         <a href="{{ base_url_prefix }}/zones/batch-ptr?id={{ zone_id }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-repeat me-1 text-secondary"></i>{% trans %}Generate PTR{% endtrans %}
@@ -539,10 +557,12 @@
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <strong><i class="bi bi-plus-circle me-2"></i>{% trans %}Add new record{% endtrans %}</strong>
         <div>
-            {% if dns_wizards_enabled and not is_reverse_zone %}
-            <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/wizard" class="btn btn-primary btn-sm me-1" title="{% trans %}Guided wizards for DMARC, SPF, DKIM, CAA, TLSA, and SRV records{% endtrans %}">
-                <i class="bi bi-magic me-1 text-white"></i>{% trans %}Record Wizard{% endtrans %}
+            {% if dns_wizard_actions is defined and dns_wizard_actions|length > 0 and not is_reverse_zone %}
+            {% for action in dns_wizard_actions %}
+            <a href="{{ base_url_prefix }}{{ action.url }}" class="btn btn-primary btn-sm me-1" title="{% trans %}Guided wizards for DMARC, SPF, DKIM, CAA, TLSA, and SRV records{% endtrans %}">
+                <i class="bi bi-{{ action.icon }} me-1 text-white"></i>{{ action.label|trans }}
             </a>
+            {% endfor %}
             {% endif %}
             <a href="{{ base_url_prefix }}/zones/{{ zone_id }}/records/add" class="btn btn-primary btn-sm me-1">
                 <i class="bi bi-table me-1 text-white"></i>{% trans %}Multi-record mode{% endtrans %}

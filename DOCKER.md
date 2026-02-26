@@ -185,6 +185,7 @@ docker run -d --name poweradmin -p 80:80 \
 | `PA_DNS_THIRD_LEVEL_CHECK` | Prevent third-level domain creation | `false` | No |
 | `PA_DNS_TXT_AUTO_QUOTE` | Automatically quote TXT records | `false` | No |
 | `PA_DNS_PREVENT_DUPLICATE_PTR` | Prevent duplicate PTR records in batch operations | `true` | No |
+| `PA_DNS_CUSTOM_TLDS` | Comma-separated custom TLDs for CNAME targets (e.g., `dn42,home,internal`) | Empty | No |
 
 ### DNS Record Types
 
@@ -220,25 +221,85 @@ docker run -d --name poweradmin -p 80:80 \
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_SESSION_KEY` | Custom session key (recommended for production) | Auto-generated | No |
+| `PA_PASSWORD_ENCRYPTION` | Password hashing algorithm (`md5`, `md5salt`, `bcrypt`, `argon2i`, `argon2id`) | `bcrypt` | No |
+| `PA_PASSWORD_COST` | Cost factor for bcrypt hashing | `12` | No |
+| `PA_LOGIN_TOKEN_VALIDATION` | Enable token validation for login form | `true` | No |
+| `PA_GLOBAL_TOKEN_VALIDATION` | Enable token validation for all forms | `true` | No |
 
+### Password Policy
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_PASSWORD_RULES_ENABLED` | Enable password policy enforcement | `true` | No |
+| `PA_PASSWORD_MIN_LENGTH` | Minimum password length | `6` | No |
+| `PA_PASSWORD_REQUIRE_UPPERCASE` | Require at least one uppercase letter | `true` | No |
+| `PA_PASSWORD_REQUIRE_LOWERCASE` | Require at least one lowercase letter | `true` | No |
+| `PA_PASSWORD_REQUIRE_NUMBERS` | Require at least one number | `true` | No |
+| `PA_PASSWORD_REQUIRE_SPECIAL` | Require at least one special character | `false` | No |
+
+### Account Lockout
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_LOCKOUT_ENABLED` | Enable account lockout after failed login attempts | `false` | No |
+| `PA_LOCKOUT_ATTEMPTS` | Number of failed attempts before lockout | `5` | No |
+| `PA_LOCKOUT_DURATION` | Lockout duration in minutes | `15` | No |
+| `PA_LOCKOUT_TRACK_IP` | Lock accounts based on IP address | `true` | No |
+| `PA_LOCKOUT_CLEAR_ON_SUCCESS` | Clear failed attempts after successful login | `true` | No |
 
 ### Multi-Factor Authentication (MFA)
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_MFA_ENABLED` | Enable MFA functionality | `false` | No |
+| `PA_MFA_ENFORCED` | Enforce MFA for users with enforce permission | `false` | No |
 | `PA_MFA_APP_ENABLED` | Enable authenticator app option | `true` | No |
 | `PA_MFA_EMAIL_ENABLED` | Enable email verification option | `true` | No |
 | `PA_MFA_RECOVERY_CODES` | Number of recovery codes to generate | `8` | No |
 | `PA_MFA_RECOVERY_CODE_LENGTH` | Length of recovery codes | `10` | No |
 
-### Recaptcha
+### Password Reset
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_PASSWORD_RESET_ENABLED` | Enable password reset functionality | `false` | No |
+| `PA_PASSWORD_RESET_TOKEN_LIFETIME` | Token validity in seconds | `3600` | No |
+| `PA_PASSWORD_RESET_RATE_LIMIT_ATTEMPTS` | Max reset attempts per time window | `5` | No |
+| `PA_PASSWORD_RESET_RATE_LIMIT_WINDOW` | Rate limit window in seconds | `3600` | No |
+| `PA_PASSWORD_RESET_MIN_TIME_BETWEEN` | Minimum seconds between requests | `60` | No |
+
+### Username Recovery
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_USERNAME_RECOVERY_ENABLED` | Enable username recovery functionality | `false` | No |
+| `PA_USERNAME_RECOVERY_RATE_LIMIT_ATTEMPTS` | Max recovery attempts per time window | `5` | No |
+| `PA_USERNAME_RECOVERY_RATE_LIMIT_WINDOW` | Rate limit window in seconds | `3600` | No |
+| `PA_USERNAME_RECOVERY_MIN_TIME_BETWEEN` | Minimum seconds between requests | `60` | No |
+
+### reCAPTCHA
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_RECAPTCHA_ENABLED` | Enable reCAPTCHA on login form | `false` | No |
 | `PA_RECAPTCHA_SITE_KEY` | reCAPTCHA site key (public key) | Empty | No |
 | `PA_RECAPTCHA_SECRET_KEY` | reCAPTCHA secret key (private key) | Empty | No |
+| `PA_RECAPTCHA_VERSION` | reCAPTCHA version (`v2` or `v3`) | `v3` | No |
+| `PA_RECAPTCHA_V3_THRESHOLD` | Score threshold for v3 (0.0 - 1.0) | `0.5` | No |
+
+### Notifications
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_NOTIFICATION_ZONE_ACCESS` | Enable zone access change notifications | `false` | No |
+
+### User Agreement
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PA_USER_AGREEMENT_ENABLED` | Enable user agreement system | `false` | No |
+| `PA_USER_AGREEMENT_VERSION` | Current agreement version | `1.0` | No |
+| `PA_USER_AGREEMENT_REQUIRE_ON_CHANGE` | Require re-acceptance when version changes | `true` | No |
 
 ### Mail Configuration
 
@@ -253,6 +314,9 @@ docker run -d --name poweradmin -p 80:80 \
 | `PA_SMTP_ENCRYPTION` | SMTP encryption: `tls`, `ssl`, or empty | `tls` | No |
 | `PA_MAIL_FROM` | Default "from" email address | Empty | No |
 | `PA_MAIL_FROM_NAME` | Default "from" name | Empty | No |
+| `PA_MAIL_RETURN_PATH` | Default "Return-Path" address | `poweradmin@example.com` | No |
+| `PA_SMTP_AUTH` | Whether SMTP requires authentication | `false` | No |
+| `PA_SENDMAIL_PATH` | Path to sendmail binary | `/usr/sbin/sendmail -bs` | No |
 
 ### Interface Settings
 
@@ -268,12 +332,16 @@ docker run -d --name poweradmin -p 80:80 \
 | `PA_THEME_BASE_PATH` | Base path for theme templates | `templates` | No |
 | `PA_BASE_URL` | Base URL for SAML auto-generation and interface configuration | Empty | No |
 | `PA_BASE_URL_PREFIX` | Base URL prefix for subdirectory deployments | Empty | No |
+| `PA_APPLICATION_URL` | Full application URL for emails and absolute links | Auto-detect | No |
 
 ### Interface UI Elements
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_SHOW_RECORD_ID` | Show record ID column in edit mode | `true` | No |
+| `PA_SHOW_ADD_RECORD_FORM` | Show add record form | `false` | No |
+| `PA_SHOW_RECORD_EDIT_BUTTON` | Show individual edit button per record | `false` | No |
+| `PA_SHOW_RECORD_DELETE_BUTTON` | Show individual delete button per record | `false` | No |
 | `PA_POSITION_RECORD_FORM_TOP` | Position add record form at the top | `true` | No |
 | `PA_POSITION_SAVE_BUTTON_TOP` | Position save button at the top | `false` | No |
 | `PA_SHOW_ZONE_COMMENTS` | Show zone comments | `true` | No |
@@ -288,6 +356,7 @@ docker run -d --name poweradmin -p 80:80 \
 | `PA_ADD_DOMAIN_RECORD` | Enable A/AAAA record checkbox | `true` | No |
 | `PA_DISPLAY_HOSTNAME_ONLY` | Display only hostname in zone edit | `false` | No |
 | `PA_ENABLE_CONSISTENCY_CHECKS` | Enable consistency checks page | `false` | No |
+| `PA_SHOW_FORWARD_ZONE_ASSOCIATIONS` | Show associated forward zones in reverse zone list | `true` | No |
 
 ### API Configuration
 
@@ -295,12 +364,16 @@ docker run -d --name poweradmin -p 80:80 \
 |----------|-------------|---------|----------|
 | `PA_API_ENABLED` | Enable API functionality | `false` | No |
 | `PA_API_BASIC_AUTH_ENABLED` | Enable HTTP Basic Auth for API | `false` | No |
+| `PA_API_BASIC_AUTH_REALM` | Realm name for HTTP Basic Authentication | `Poweradmin API` | No |
+| `PA_API_LOG_REQUESTS` | Log all API requests | `false` | No |
 | `PA_API_DOCS_ENABLED` | Enable API documentation at /api/docs | `false` | No |
+| `PA_API_MAX_KEYS_PER_USER` | Maximum API keys per user (admins unlimited) | `5` | No |
 
 ### PowerDNS API Integration
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
+| `PA_PDNS_DISPLAY_NAME` | PowerDNS display name to identify server | `PowerDNS` | No |
 | `PA_PDNS_API_URL` | PowerDNS API URL (e.g., http://127.0.0.1:8081) | Empty | No |
 | `PA_PDNS_API_KEY` | PowerDNS API key | Empty | No |
 | `PA_PDNS_SERVER_NAME` | PowerDNS server name for API calls | `localhost` | No |
@@ -310,10 +383,15 @@ docker run -d --name poweradmin -p 80:80 \
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_LDAP_ENABLED` | Enable LDAP authentication | `false` | No |
+| `PA_LDAP_DEBUG` | Enable LDAP debug logging | `false` | No |
 | `PA_LDAP_URI` | LDAP server URI | Empty | No |
 | `PA_LDAP_BASE_DN` | Base DN where users are stored | Empty | No |
 | `PA_LDAP_BIND_DN` | Bind DN for LDAP authentication | Empty | No |
 | `PA_LDAP_BIND_PASSWORD` | LDAP bind password | Empty | No |
+| `PA_LDAP_USER_ATTRIBUTE` | User attribute (`uid` for OpenLDAP, `sAMAccountName` for AD) | `uid` | No |
+| `PA_LDAP_PROTOCOL_VERSION` | LDAP protocol version | `3` | No |
+| `PA_LDAP_SEARCH_FILTER` | Additional LDAP search filter | Empty | No |
+| `PA_LDAP_SESSION_CACHE_TIMEOUT` | Session cache timeout in seconds (0 to disable) | `300` | No |
 
 ### OIDC (OpenID Connect) Authentication
 
@@ -570,6 +648,11 @@ docker run -d \
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PA_TIMEZONE` | Default timezone | `UTC` | No |
+| `PA_DISPLAY_STATS` | Display memory usage and execution time | `false` | No |
+| `PA_RECORD_COMMENTS_SYNC` | Enable bidirectional comment sync between A and PTR records | `false` | No |
+| `PA_EDIT_CONFLICT_RESOLUTION` | Edit conflict resolution: `last_writer_wins`, `only_latest_version`, `3_way_merge` | `last_writer_wins` | No |
+| `PA_DISPLAY_ERRORS` | Display PHP errors (false for production) | `false` | No |
+| `PA_SHOW_GENERATED_PASSWORDS` | Show generated passwords on user creation | `true` | No |
 
 ### Configuration Override
 

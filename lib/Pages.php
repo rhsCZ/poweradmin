@@ -89,7 +89,6 @@ class Pages
             'edit_user',
             'edit_zone_templ',
             'edit_zone_templ_record',
-            'email_previews',
             'forgot_password',
             'index',
             'list_log_users',
@@ -109,8 +108,6 @@ class Pages
             'search',
             'user_agreement',
             'users',
-            'whois',
-            'rdap',
             'pdns_status',
         ];
     }

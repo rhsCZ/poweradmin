@@ -55,7 +55,7 @@ return [
      * Interface Settings
      */
     'interface' => [
-        'language' => 'en_EN',
+        'language' => 'de_DE',
         'title' => 'Poweradmin (PostgreSQL)',
         'show_pdns_status' => true,
         'show_record_comments' => true,
@@ -134,25 +134,30 @@ return [
     ],
 
     /**
-     * WHOIS Settings
+     * Module Settings
      */
-    'whois' => [
-        'enabled' => true,
-        'restrict_to_admin' => false,
-    ],
-
-    /**
-     * RDAP Settings
-     */
-    'rdap' => [
-        'enabled' => true,
-        'restrict_to_admin' => false,
-    ],
-
-    /**
-     * DNS Wizard Settings
-     */
-    'dns_wizards' => [
-        'enabled' => true,
+    'modules' => [
+        'csv_export' => [
+            'enabled' => true,
+        ],
+        'zone_import_export' => [
+            'enabled' => true,
+            'auto_ttl_value' => 300,
+            'max_file_size' => 1048576,
+        ],
+        'whois' => [
+            'enabled' => true,
+            'restrict_to_admin' => false,
+        ],
+        'rdap' => [
+            'enabled' => true,
+            'restrict_to_admin' => false,
+        ],
+        'email_previews' => [
+            'enabled' => true,
+        ],
+        'dns_wizards' => [
+            'enabled' => true,
+        ],
     ],
 ];

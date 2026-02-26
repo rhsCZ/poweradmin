@@ -122,7 +122,7 @@
                         <td><span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ zone['comment'] }}">
                             {{ zone["utf8_name"] }}
                             </span></td>
-                        <td>{{ zone["type"] | lower }}</td>
+                        <td><span class="badge {{ zone_type_class(zone['type']) }}">{{ zone['type'] }}</span></td>
                         <td>{{ zone["count_records"] }}</td>
 
                         <td>
@@ -166,17 +166,21 @@
                         {% endif %}
                         <td class="text-end">
                             <div class="gap-2">
-                                {% if perm_is_godlike and whois_enabled %}
-                                <a class="btn btn-outline-secondary btn-sm" href="{{ base_url_prefix }}/zones/{{ zone['id'] }}/whois" data-testid="whois-zone-{{ zone['id'] }}">
-                                    <i class="bi bi-search-heart text-secondary"></i>
-                                    <span class="d-none d-md-inline">{% trans %}WHOIS{% endtrans %}</span>
+                                {% if whois_action_patterns is defined and whois_action_patterns|length > 0 %}
+                                {% for action in whois_action_patterns %}
+                                <a class="btn btn-outline-secondary btn-sm" href="{{ base_url_prefix }}{{ action.url_pattern|replace({'{id}': zone['id']}) }}" data-testid="whois-zone-{{ zone['id'] }}">
+                                    <i class="bi bi-{{ action.icon }} text-secondary"></i>
+                                    <span class="d-none d-md-inline">{{ action.label }}</span>
                                 </a>
+                                {% endfor %}
                                 {% endif %}
-                                {% if perm_is_godlike and rdap_enabled %}
-                                <a class="btn btn-outline-secondary btn-sm" href="{{ base_url_prefix }}/zones/{{ zone['id'] }}/rdap" data-testid="rdap-zone-{{ zone['id'] }}">
-                                    <i class="bi bi-search text-secondary"></i>
-                                    <span class="d-none d-md-inline">{% trans %}RDAP{% endtrans %}</span>
+                                {% if rdap_action_patterns is defined and rdap_action_patterns|length > 0 %}
+                                {% for action in rdap_action_patterns %}
+                                <a class="btn btn-outline-secondary btn-sm" href="{{ base_url_prefix }}{{ action.url_pattern|replace({'{id}': zone['id']}) }}" data-testid="rdap-zone-{{ zone['id'] }}">
+                                    <i class="bi bi-{{ action.icon }} text-secondary"></i>
+                                    <span class="d-none d-md-inline">{{ action.label }}</span>
                                 </a>
+                                {% endfor %}
                                 {% endif %}
                                 {% if perm_zone_master_add %}
                                 <a class="btn btn-outline-secondary btn-sm" href="{{ base_url_prefix }}/zones/batch-ptr?id={{ zone['id'] }}">

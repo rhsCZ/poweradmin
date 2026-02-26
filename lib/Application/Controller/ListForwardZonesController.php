@@ -46,6 +46,7 @@ use Poweradmin\Infrastructure\Repository\DbZoneRepository;
 use Poweradmin\Infrastructure\Repository\DbZoneGroupRepository;
 use Poweradmin\Infrastructure\Repository\DbUserGroupRepository;
 use Poweradmin\Infrastructure\Service\HttpPaginationParameters;
+use Poweradmin\Module\ModuleRegistry;
 
 class ListForwardZonesController extends BaseController
 {
@@ -58,7 +59,8 @@ class ListForwardZonesController extends BaseController
         $this->checkCondition($permission_check, _('You do not have sufficient permissions to view this page.'));
 
         // Set the current page for navigation highlighting
-        $this->requestData['page'] = 'list_forward_zones';
+        $this->setCurrentPage('list_forward_zones');
+        $this->setPageTitle(_('Forward Zones'));
 
         $this->listForwardZones();
     }
@@ -161,9 +163,17 @@ class ListForwardZonesController extends BaseController
             'perm_zone_master_add' => UserManager::verifyPermission($this->db, 'zone_master_add'),
             'perm_zone_slave_add' => UserManager::verifyPermission($this->db, 'zone_slave_add'),
             'perm_is_godlike' => UserManager::verifyPermission($this->db, 'user_is_ueberuser'),
-            'whois_enabled' => $this->config->get('whois', 'enabled', false),
-            'rdap_enabled' => $this->config->get('rdap', 'enabled', false),
+            'whois_action_patterns' => $this->getModuleActionPatterns('whois_lookup'),
+            'rdap_action_patterns' => $this->getModuleActionPatterns('rdap_lookup'),
         ]);
+    }
+
+    private function getModuleActionPatterns(string $capability): array
+    {
+        $isAdmin = UserManager::verifyPermission($this->db, 'user_is_ueberuser');
+        $registry = new ModuleRegistry($this->config);
+        $registry->loadModules();
+        return $registry->getCapabilityData($capability, [], $isAdmin);
     }
 
     private function getAvailableStartingLetters(string $letterStart, int $userId): string

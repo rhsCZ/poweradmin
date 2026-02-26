@@ -478,6 +478,54 @@ generate_config() {
     local logging_database_enabled=$(echo "${PA_LOGGING_DATABASE_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
     local logging_syslog_enabled=$(echo "${PA_LOGGING_SYSLOG_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
 
+    # Convert password policy boolean values to lowercase
+    local password_rules_enabled=$(echo "${PA_PASSWORD_RULES_ENABLED:-true}" | tr '[:upper:]' '[:lower:]')
+    local password_require_uppercase=$(echo "${PA_PASSWORD_REQUIRE_UPPERCASE:-true}" | tr '[:upper:]' '[:lower:]')
+    local password_require_lowercase=$(echo "${PA_PASSWORD_REQUIRE_LOWERCASE:-true}" | tr '[:upper:]' '[:lower:]')
+    local password_require_numbers=$(echo "${PA_PASSWORD_REQUIRE_NUMBERS:-true}" | tr '[:upper:]' '[:lower:]')
+    local password_require_special=$(echo "${PA_PASSWORD_REQUIRE_SPECIAL:-false}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert account lockout boolean values to lowercase
+    local lockout_enabled=$(echo "${PA_LOCKOUT_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
+    local lockout_track_ip=$(echo "${PA_LOCKOUT_TRACK_IP:-true}" | tr '[:upper:]' '[:lower:]')
+    local lockout_clear_on_success=$(echo "${PA_LOCKOUT_CLEAR_ON_SUCCESS:-true}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert password reset/recovery boolean values to lowercase
+    local password_reset_enabled=$(echo "${PA_PASSWORD_RESET_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
+    local username_recovery_enabled=$(echo "${PA_USERNAME_RECOVERY_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert security boolean values to lowercase
+    local login_token_validation=$(echo "${PA_LOGIN_TOKEN_VALIDATION:-true}" | tr '[:upper:]' '[:lower:]')
+    local global_token_validation=$(echo "${PA_GLOBAL_TOKEN_VALIDATION:-true}" | tr '[:upper:]' '[:lower:]')
+    local mfa_enforced=$(echo "${PA_MFA_ENFORCED:-false}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert notification boolean values to lowercase
+    local notification_zone_access=$(echo "${PA_NOTIFICATION_ZONE_ACCESS:-false}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert user agreement boolean values to lowercase
+    local user_agreement_enabled=$(echo "${PA_USER_AGREEMENT_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
+    local user_agreement_require_on_change=$(echo "${PA_USER_AGREEMENT_REQUIRE_ON_CHANGE:-true}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert interface boolean values to lowercase
+    local show_add_record_form=$(echo "${PA_SHOW_ADD_RECORD_FORM:-false}" | tr '[:upper:]' '[:lower:]')
+    local show_record_edit_button=$(echo "${PA_SHOW_RECORD_EDIT_BUTTON:-false}" | tr '[:upper:]' '[:lower:]')
+    local show_record_delete_button=$(echo "${PA_SHOW_RECORD_DELETE_BUTTON:-false}" | tr '[:upper:]' '[:lower:]')
+    local show_forward_zone_associations=$(echo "${PA_SHOW_FORWARD_ZONE_ASSOCIATIONS:-true}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert mail boolean values to lowercase
+    local mail_auth=$(echo "${PA_SMTP_AUTH:-false}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert LDAP boolean values to lowercase
+    local ldap_debug=$(echo "${PA_LDAP_DEBUG:-false}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert misc boolean values to lowercase
+    local display_stats=$(echo "${PA_DISPLAY_STATS:-false}" | tr '[:upper:]' '[:lower:]')
+    local record_comments_sync=$(echo "${PA_RECORD_COMMENTS_SYNC:-false}" | tr '[:upper:]' '[:lower:]')
+    local display_errors=$(echo "${PA_DISPLAY_ERRORS:-false}" | tr '[:upper:]' '[:lower:]')
+    local show_generated_passwords=$(echo "${PA_SHOW_GENERATED_PASSWORDS:-true}" | tr '[:upper:]' '[:lower:]')
+
+    # Convert API boolean values to lowercase
+    local api_log_requests=$(echo "${PA_API_LOG_REQUESTS:-false}" | tr '[:upper:]' '[:lower:]')
     # Convert OIDC boolean values to lowercase
     local oidc_enabled=$(echo "${PA_OIDC_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')
     local oidc_auto_provision=$(echo "${PA_OIDC_AUTO_PROVISION:-true}" | tr '[:upper:]' '[:lower:]')
@@ -515,6 +563,12 @@ generate_config() {
     local reverse_record_types="null"
     if [ -n "${PA_DNS_REVERSE_RECORD_TYPES}" ]; then
         reverse_record_types="['$(echo "${PA_DNS_REVERSE_RECORD_TYPES}" | sed "s/,/','/g")']"
+    fi
+
+    # Process custom TLDs - convert comma-separated values to PHP array format or empty array
+    local custom_tlds="[]"
+    if [ -n "${PA_DNS_CUSTOM_TLDS}" ]; then
+        custom_tlds="['$(echo "${PA_DNS_CUSTOM_TLDS}" | sed "s/,/','/g")']"
     fi
 
     # Ensure parent directory exists for custom config paths
@@ -560,6 +614,7 @@ return [
         'third_level_check' => ${dns_third_level_check},
         'txt_auto_quote' => ${dns_txt_auto_quote},
         'prevent_duplicate_ptr' => ${dns_prevent_duplicate_ptr},
+        'custom_tlds' => ${custom_tlds},
         'domain_record_types' => ${domain_record_types},
         'reverse_record_types' => ${reverse_record_types},
     ],
@@ -569,17 +624,52 @@ return [
     ],
     'security' => [
         'session_key' => '${session_key}',
+        'password_encryption' => '${PA_PASSWORD_ENCRYPTION:-bcrypt}',
+        'password_cost' => ${PA_PASSWORD_COST:-12},
+        'login_token_validation' => ${login_token_validation},
+        'global_token_validation' => ${global_token_validation},
+        'password_policy' => [
+            'enable_password_rules' => ${password_rules_enabled},
+            'min_length' => ${PA_PASSWORD_MIN_LENGTH:-6},
+            'require_uppercase' => ${password_require_uppercase},
+            'require_lowercase' => ${password_require_lowercase},
+            'require_numbers' => ${password_require_numbers},
+            'require_special' => ${password_require_special},
+        ],
+        'account_lockout' => [
+            'enable_lockout' => ${lockout_enabled},
+            'lockout_attempts' => ${PA_LOCKOUT_ATTEMPTS:-5},
+            'lockout_duration' => ${PA_LOCKOUT_DURATION:-15},
+            'track_ip_address' => ${lockout_track_ip},
+            'clear_attempts_on_success' => ${lockout_clear_on_success},
+        ],
         'mfa' => [
             'enabled' => ${mfa_enabled},
+            'enforced' => ${mfa_enforced},
             'app_enabled' => ${mfa_app_enabled},
             'email_enabled' => ${mfa_email_enabled},
             'recovery_codes' => ${PA_MFA_RECOVERY_CODES:-8},
             'recovery_code_length' => ${PA_MFA_RECOVERY_CODE_LENGTH:-10},
         ],
+        'password_reset' => [
+            'enabled' => ${password_reset_enabled},
+            'token_lifetime' => ${PA_PASSWORD_RESET_TOKEN_LIFETIME:-3600},
+            'rate_limit_attempts' => ${PA_PASSWORD_RESET_RATE_LIMIT_ATTEMPTS:-5},
+            'rate_limit_window' => ${PA_PASSWORD_RESET_RATE_LIMIT_WINDOW:-3600},
+            'min_time_between_requests' => ${PA_PASSWORD_RESET_MIN_TIME_BETWEEN:-60},
+        ],
+        'username_recovery' => [
+            'enabled' => ${username_recovery_enabled},
+            'rate_limit_attempts' => ${PA_USERNAME_RECOVERY_RATE_LIMIT_ATTEMPTS:-5},
+            'rate_limit_window' => ${PA_USERNAME_RECOVERY_RATE_LIMIT_WINDOW:-3600},
+            'min_time_between_requests' => ${PA_USERNAME_RECOVERY_MIN_TIME_BETWEEN:-60},
+        ],
         'recaptcha' => [
             'enabled' => ${recaptcha_enabled},
             'site_key' => '${PA_RECAPTCHA_SITE_KEY:-}',
             'secret_key' => '${PA_RECAPTCHA_SECRET_KEY:-}',
+            'version' => '${PA_RECAPTCHA_VERSION:-v3}',
+            'v3_threshold' => ${PA_RECAPTCHA_V3_THRESHOLD:-0.5},
         ],
     ],
     'mail' => [
@@ -592,6 +682,12 @@ return [
         'encryption' => '${PA_SMTP_ENCRYPTION:-tls}',
         'from' => '${PA_MAIL_FROM:-}',
         'from_name' => '${PA_MAIL_FROM_NAME:-}',
+        'return_path' => '${PA_MAIL_RETURN_PATH:-poweradmin@example.com}',
+        'auth' => ${mail_auth},
+        'sendmail_path' => '${PA_SENDMAIL_PATH:-/usr/sbin/sendmail -bs}',
+    ],
+    'notifications' => [
+        'zone_access_enabled' => ${notification_zone_access},
     ],
     'interface' => [
         'title' => '${PA_APP_TITLE:-Poweradmin}',
@@ -604,7 +700,11 @@ return [
         'style' => '${PA_STYLE:-light}',
         'theme_base_path' => '${PA_THEME_BASE_PATH:-templates}',
         'base_url_prefix' => '${PA_BASE_URL_PREFIX:-}',
+        'application_url' => '${PA_APPLICATION_URL:-}',
         'show_record_id' => ${show_record_id},
+        'show_add_record_form' => ${show_add_record_form},
+        'show_record_edit_button' => ${show_record_edit_button},
+        'show_record_delete_button' => ${show_record_delete_button},
         'position_record_form_top' => ${position_record_form_top},
         'position_save_button_top' => ${position_save_button_top},
         'show_zone_comments' => ${show_zone_comments},
@@ -619,13 +719,23 @@ return [
         'add_domain_record' => ${add_domain_record},
         'display_hostname_only' => ${display_hostname_only},
         'enable_consistency_checks' => ${enable_consistency_checks},
+        'show_forward_zone_associations' => ${show_forward_zone_associations},
     ],
     'api' => [
         'enabled' => ${api_enabled},
         'basic_auth_enabled' => ${api_basic_auth_enabled},
+        'basic_auth_realm' => '${PA_API_BASIC_AUTH_REALM:-Poweradmin API}',
+        'log_requests' => ${api_log_requests},
         'docs_enabled' => ${api_docs_enabled},
+        'max_keys_per_user' => ${PA_API_MAX_KEYS_PER_USER:-5},
+    ],
+    'user_agreement' => [
+        'enabled' => ${user_agreement_enabled},
+        'current_version' => '${PA_USER_AGREEMENT_VERSION:-1.0}',
+        'require_on_version_change' => ${user_agreement_require_on_change},
     ],
     'pdns_api' => [
+        'display_name' => '${PA_PDNS_DISPLAY_NAME:-PowerDNS}',
         'url' => '${PA_PDNS_API_URL:-}',
         'key' => '${PA_PDNS_API_KEY:-}',
         'server_name' => '${PA_PDNS_SERVER_NAME:-localhost}',
@@ -634,10 +744,23 @@ return [
     ],
     'ldap' => [
         'enabled' => ${ldap_enabled},
+        'debug' => ${ldap_debug},
         'uri' => '${PA_LDAP_URI:-}',
         'base_dn' => '${PA_LDAP_BASE_DN:-}',
         'bind_dn' => '${PA_LDAP_BIND_DN:-}',
         'bind_password' => '${PA_LDAP_BIND_PASSWORD:-}',
+        'user_attribute' => '${PA_LDAP_USER_ATTRIBUTE:-uid}',
+        'protocol_version' => ${PA_LDAP_PROTOCOL_VERSION:-3},
+        'search_filter' => '${PA_LDAP_SEARCH_FILTER:-}',
+        'session_cache_timeout' => ${PA_LDAP_SESSION_CACHE_TIMEOUT:-300},
+    ],
+    'logging' => [
+        'type' => '${PA_LOGGING_TYPE:-null}',
+        'level' => '${PA_LOGGING_LEVEL:-info}',
+        'database_enabled' => ${logging_database_enabled},
+        'syslog_enabled' => ${logging_syslog_enabled},
+        'syslog_identity' => '${PA_LOGGING_SYSLOG_IDENTITY:-poweradmin}',
+        'syslog_facility' => ${PA_LOGGING_SYSLOG_FACILITY:-LOG_USER},
     ],
     'logging' => [
         'type' => '${PA_LOGGING_TYPE:-null}',
@@ -648,7 +771,12 @@ return [
         'syslog_facility' => ${PA_LOGGING_SYSLOG_FACILITY:-LOG_USER},
     ],
     'misc' => [
+        'display_stats' => ${display_stats},
         'timezone' => '${PA_TIMEZONE:-UTC}',
+        'record_comments_sync' => ${record_comments_sync},
+        'edit_conflict_resolution' => '${PA_EDIT_CONFLICT_RESOLUTION:-last_writer_wins}',
+        'display_errors' => ${display_errors},
+        'show_generated_passwords' => ${show_generated_passwords},
     ],
     'oidc' => [
         'enabled' => ${oidc_enabled},
@@ -948,6 +1076,9 @@ print_config_summary() {
         log "Logging Level: ${PA_LOGGING_LEVEL:-info}"
         log "Database Logging: ${PA_LOGGING_DATABASE_ENABLED:-false}"
         log "Syslog Enabled: ${PA_LOGGING_SYSLOG_ENABLED:-false}"
+        log "Account Lockout: ${PA_LOCKOUT_ENABLED:-false}"
+        log "Password Reset: ${PA_PASSWORD_RESET_ENABLED:-false}"
+        log "Username Recovery: ${PA_USERNAME_RECOVERY_ENABLED:-false}"
     fi
 
     log "Admin User Creation: ${PA_CREATE_ADMIN:-false}"

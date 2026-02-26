@@ -34,7 +34,9 @@ namespace Poweradmin\Application\Controller;
 use Poweradmin\Application\Service\PowerdnsStatusService;
 use Poweradmin\BaseController;
 use Poweradmin\Domain\Model\Permission;
+use Poweradmin\Domain\Model\UserManager;
 use Poweradmin\Domain\Service\UserContextService;
+use Poweradmin\Module\ModuleRegistry;
 
 class IndexController extends BaseController
 {
@@ -53,6 +55,9 @@ class IndexController extends BaseController
             $this->redirect('/login');
             return;
         }
+
+        $this->setCurrentPage('index');
+        $this->setPageTitle(_('Dashboard'));
 
         $this->showIndex();
     }
@@ -113,17 +118,30 @@ class IndexController extends BaseController
             'permissions' => $permissions,
             'dblog_use' => $this->config->get('logging', 'database_enabled', false),
             'iface_add_reverse_record' => $this->config->get('interface', 'add_reverse_record', true),
-            'whois_enabled' => $this->config->get('whois', 'enabled', false),
-            'rdap_enabled' => $this->config->get('rdap', 'enabled', false),
             'api_enabled' => $this->config->get('api', 'enabled', false),
-            'whois_restrict_to_admin' => $this->config->get('whois', 'restrict_to_admin', true),
-            'rdap_restrict_to_admin' => $this->config->get('rdap', 'restrict_to_admin', true),
             'pdns_api_enabled' => $pdnsApiEnabled,
             'show_pdns_status' => $showPdnsStatus,
             'pdns_server_status' => $pdnsServerStatus,
             'is_limited_user' => $isLimitedUser,
             'user_id' => $userId,
             'enable_consistency_checks' => $this->config->get('interface', 'enable_consistency_checks', false),
+            'module_nav_items' => $this->getModuleNavItemsForDashboard(),
         ]);
+    }
+
+    private function getModuleNavItemsForDashboard(): array
+    {
+        $registry = new ModuleRegistry($this->config);
+        $registry->loadModules();
+
+        $isAdmin = UserManager::verifyPermission($this->db, 'user_is_ueberuser');
+        $items = $registry->getNavItems($isAdmin);
+
+        return array_values(array_filter($items, function (array $item): bool {
+            if (!empty($item['permission'])) {
+                return UserManager::verifyPermission($this->db, $item['permission']);
+            }
+            return true;
+        }));
     }
 }

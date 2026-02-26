@@ -4,7 +4,7 @@
  *  See <https://www.poweradmin.org> for more details.
  *
  *  Copyright 2007-2010 Rejo Zenger <rejo@zenger.nl>
- *  Copyright 2010-2025 Poweradmin Development Team
+ *  Copyright 2010-2026 Poweradmin Development Team
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ use Poweradmin\Infrastructure\Repository\DbUserPreferenceRepository;
 use Poweradmin\Infrastructure\Service\ApiKeyAuthenticationMiddleware;
 use Poweradmin\Infrastructure\Service\MessageService;
 use Poweradmin\Infrastructure\Service\StyleManager;
+use Poweradmin\Module\ModuleRegistry;
 use Poweradmin\Version;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -59,6 +60,7 @@ abstract class BaseController
     protected MessageService $messageService;
     protected ConfigurationManager $config;
     private UserContextService $userContextService;
+    private string $pageTitle = '';
 
     /**
      * Abstract method to be implemented by subclasses to run the controller logic.
@@ -235,6 +237,20 @@ abstract class BaseController
         return $this->config;
     }
 
+    /**
+     * Get a module config value with legacy fallback.
+     *
+     * Checks modules.<module>.<key> first, then falls back to <module>.<key>
+     * for backward compatibility with pre-module config layouts.
+     */
+    protected function getModuleConfig(string $module, string $key, mixed $default = null): mixed
+    {
+        $value = $this->config->get('modules', "$module.$key", null);
+        if ($value !== null) {
+            return $value;
+        }
+        return $this->config->get($module, $key, $default);
+    }
 
     /**
      * Renders a template with the given parameters.
@@ -408,6 +424,26 @@ abstract class BaseController
     }
 
     /**
+     * Sets the current page identifier used for navigation highlighting.
+     *
+     * @param string $page The page identifier
+     */
+    protected function setCurrentPage(string $page): void
+    {
+        $this->requestData['page'] = $page;
+    }
+
+    /**
+     * Sets the page title displayed in the header.
+     *
+     * @param string $title The page title
+     */
+    protected function setPageTitle(string $title): void
+    {
+        $this->pageTitle = $title;
+    }
+
+    /**
      * Checks if the user has a specific permission and displays an error message if not.
      *
      * @param string $permission The permission to check.
@@ -544,15 +580,11 @@ abstract class BaseController
                 'request' => $this->requestData,
                 'dblog_use' => $dblog_use,
                 'iface_add_reverse_record' => $this->config->get('interface', 'add_reverse_record', false),
-                'whois_enabled' => $this->config->get('whois', 'enabled', false),
-                'rdap_enabled' => $this->config->get('rdap', 'enabled', false),
                 'api_enabled' => $this->config->get('api', 'enabled', false),
                 'mfa_enabled' => $this->config->get('security', 'mfa.enabled', false),
-                'whois_restrict_to_admin' => $this->config->get('whois', 'restrict_to_admin', true),
-                'rdap_restrict_to_admin' => $this->config->get('rdap', 'restrict_to_admin', true),
                 'enable_consistency_checks' => $this->config->get('interface', 'enable_consistency_checks', false),
-                'email_previews_enabled' => $this->config->get('misc', 'email_previews_enabled', false),
-                'api_docs_enabled' => $this->config->get('api', 'docs_enabled', false)
+                'api_docs_enabled' => $this->config->get('api', 'docs_enabled', false),
+                'module_nav_items' => $this->getModuleNavItems(),
             ]);
         }
 
@@ -561,9 +593,10 @@ abstract class BaseController
             $vars['system_messages'] = $systemMessages;
         }
 
-        // Add the current page to the header variables
+        // Add the current page and page title to the header variables
         $currentPage = $this->requestData['page'] ?? 'index';
         $vars['current_page'] = $currentPage;
+        $vars['page_title'] = $this->pageTitle !== '' ? $this->pageTitle : $vars['iface_title'];
 
         $this->app->render('header.html', $vars);
     }
@@ -594,6 +627,27 @@ abstract class BaseController
             'base_url_prefix' => $this->config->get('interface', 'base_url_prefix', ''),
             'user_logged_in' => $this->userContextService->isAuthenticated(),
         ]);
+    }
+
+    /**
+     * Gets navigation items from enabled modules.
+     *
+     * @return array<array<string, string>>
+     */
+    private function getModuleNavItems(): array
+    {
+        $registry = new ModuleRegistry($this->config);
+        $registry->loadModules();
+
+        $isAdmin = UserManager::verifyPermission($this->db, 'user_is_ueberuser');
+        $items = $registry->getNavItems($isAdmin);
+
+        return array_values(array_filter($items, function (array $item): bool {
+            if (!empty($item['permission'])) {
+                return UserManager::verifyPermission($this->db, $item['permission']);
+            }
+            return true;
+        }));
     }
 
     /**

@@ -98,6 +98,7 @@ test.describe('Zone Delete Confirmation', () => {
 
       if (await deleteLinks.count() > 0) {
         await deleteLinks.first().click();
+        await page.waitForLoadState('networkidle');
 
         const csrfToken = page.locator('input[name="_token"]');
         const hasToken = await csrfToken.count() > 0;

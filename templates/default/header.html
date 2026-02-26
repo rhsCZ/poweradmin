@@ -65,8 +65,8 @@
                 {% endif %}
                 {% if perm_view_zone_own or perm_view_zone_other or perm_zone_master_add or perm_zone_slave_add %}
                 <li class="p-2">
-                    <a href="{{ base_url_prefix }}/zones/forward" class="nav-link text-{{ current_page in ['list_forward_zones', 'list_reverse_zones', 'add_zone_master', 'add_zone_slave', 'bulk_registration', 'batch_ptr_record', 'list_log_zones', 'edit', 'dns_wizard_select', 'dns_wizard_form'] ? 'primary' : 'secondary' }}" data-testid="list-zones-link"><i class="bi bi-diagram-3 fs-5"></i></a>
-                    <a class="text-{{ current_page in ['list_forward_zones', 'list_reverse_zones', 'add_zone_master', 'add_zone_slave', 'bulk_registration', 'batch_ptr_record', 'list_log_zones', 'edit', 'dns_wizard_select', 'dns_wizard_form'] ? 'primary' : 'secondary' }} text-decoration-none dropdown-toggle" data-bs-toggle="dropdown"
+                    <a href="{{ base_url_prefix }}/zones/forward" class="nav-link text-{{ current_page in ['list_forward_zones', 'list_reverse_zones', 'add_zone_master', 'add_zone_slave', 'bulk_registration', 'batch_ptr_record', 'list_log_zones', 'edit'] or current_page starts with 'module_dns_wizard' ? 'primary' : 'secondary' }}" data-testid="list-zones-link"><i class="bi bi-diagram-3 fs-5"></i></a>
+                    <a class="text-{{ current_page in ['list_forward_zones', 'list_reverse_zones', 'add_zone_master', 'add_zone_slave', 'bulk_registration', 'batch_ptr_record', 'list_log_zones', 'edit'] or current_page starts with 'module_dns_wizard' ? 'primary' : 'secondary' }} text-decoration-none dropdown-toggle" data-bs-toggle="dropdown"
                        href="#"
                        role="button">{% trans %}Zones{% endtrans %}</a>
                     <ul class="dropdown-menu">
@@ -175,23 +175,13 @@
                     </ul>
                 </li>
                 {% endif %}
-                {% if ((not whois_restrict_to_admin or perm_is_godlike) and whois_enabled) or ((not rdap_restrict_to_admin or perm_is_godlike) and rdap_enabled) or (perm_is_godlike and api_enabled) or (perm_is_godlike and enable_consistency_checks) or (perm_is_godlike and email_previews_enabled) %}
+                {% if (perm_is_godlike and api_enabled) or (perm_is_godlike and enable_consistency_checks) or (module_nav_items is defined and module_nav_items|length > 0) %}
                 <li class="p-2">
-                    <a href="#" class="nav-link text-{{ current_page in ['whois', 'rdap', 'api_keys', 'database_consistency', 'email_previews'] ? 'primary' : 'secondary' }} text-center"><i class="bi bi-tools fs-5"></i></a>
-                    <a class="text-{{ current_page in ['whois', 'rdap', 'api_keys', 'database_consistency', 'email_previews'] ? 'primary' : 'secondary' }} text-decoration-none dropdown-toggle" data-bs-toggle="dropdown"
+                    <a href="#" class="nav-link text-{{ current_page in ['api_keys', 'database_consistency'] or (current_page starts with 'module_' and not current_page starts with 'module_dns_wizard') ? 'primary' : 'secondary' }} text-center"><i class="bi bi-tools fs-5"></i></a>
+                    <a class="text-{{ current_page in ['api_keys', 'database_consistency'] or (current_page starts with 'module_' and not current_page starts with 'module_dns_wizard') ? 'primary' : 'secondary' }} text-decoration-none dropdown-toggle" data-bs-toggle="dropdown"
                         href="#"
                         role="button">{% trans %}Tools{% endtrans %}</a>
                     <ul class="dropdown-menu">
-                        {% if (not whois_restrict_to_admin or perm_is_godlike) and whois_enabled %}
-                        <li><a class="dropdown-item {{ current_page == 'whois' ? 'active' : '' }}" href="{{ base_url_prefix }}/whois">
-                            <i class="bi bi-search-heart me-2"></i>{% trans %}WHOIS{% endtrans %}
-                        </a></li>
-                        {% endif %}
-                        {% if (not rdap_restrict_to_admin or perm_is_godlike) and rdap_enabled %}
-                        <li><a class="dropdown-item {{ current_page == 'rdap' ? 'active' : '' }}" href="{{ base_url_prefix }}/rdap">
-                            <i class="bi bi-search-heart-fill me-2"></i>{% trans %}RDAP{% endtrans %}
-                        </a></li>
-                        {% endif %}
                         {% if perm_is_godlike and api_enabled %}
                         <li><a class="dropdown-item {{ current_page == 'api_keys' ? 'active' : '' }}" href="{{ base_url_prefix }}/settings/api-keys">
                             <i class="bi bi-key-fill me-2"></i>{% trans %}API Keys{% endtrans %}
@@ -202,15 +192,19 @@
                             <i class="bi bi-database-check me-2"></i>{% trans %}Database Consistency{% endtrans %}
                         </a></li>
                         {% endif %}
-                        {% if perm_is_godlike and email_previews_enabled %}
-                        <li><a class="dropdown-item {{ current_page == 'email_previews' ? 'active' : '' }}" href="{{ base_url_prefix }}/tools/email-previews">
-                            <i class="bi bi-envelope-fill me-2"></i>{% trans %}Email Template Previews{% endtrans %}
-                        </a></li>
-                        {% endif %}
                         {% if api_docs_enabled %}
                         <li><a class="dropdown-item" href="{{ base_url_prefix }}/api/docs" target="_blank">
                             <i class="bi bi-book me-2"></i>{% trans %}API Documentation{% endtrans %}
                         </a></li>
+                        {% endif %}
+                        {% if module_nav_items is defined and module_nav_items|length > 0 %}
+                        <li><hr class="dropdown-divider"></li>
+                        {% for item in module_nav_items %}
+                        <li><a class="dropdown-item {{ current_page == item.page_id ? 'active' : '' }}"
+                               href="{{ base_url_prefix }}{{ item.url }}">
+                            <i class="bi bi-{{ item.icon }} me-2"></i>{{ item.label|trans }}
+                        </a></li>
+                        {% endfor %}
                         {% endif %}
                     </ul>
                 </li>

@@ -26,6 +26,7 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ base_url_prefix }}/">{% trans %}Home{% endtrans %}</a></li>
+        <li class="breadcrumb-item">{% trans %}Tools{% endtrans %}</li>
         <li class="breadcrumb-item" aria-current="page">{% trans %}Database Consistency Check{% endtrans %}</li>
     </ol>
 </nav>
@@ -168,7 +169,7 @@
                                     <tr>
                                         <td>{{ record.id }}</td>
                                         <td>{{ record.name }}</td>
-                                        <td><span class="badge bg-secondary">{{ record.type }}</span></td>
+                                        <td><span class="badge {{ record_type_class(record.type) }}">{{ record.type }}</span></td>
                                         <td>{{ record.content }}</td>
                                         <td>{{ record.domain_id }}</td>
                                         <td>
@@ -266,7 +267,7 @@
                                     <tr>
                                         <td>{{ zone.id }}</td>
                                         <td>{{ zone.name }}</td>
-                                        <td><span class="badge bg-secondary">{{ zone.type }}</span></td>
+                                        <td><span class="badge {{ zone_type_class(zone.type) }}">{{ zone.type }}</span></td>
                                         <td>
                                             <form method="post" action="{{ base_url_prefix }}/tools/database-consistency" style="display: inline;">
                                                 <input type="hidden" name="_token" value="{{ csrf_token }}">

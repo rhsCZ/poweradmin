@@ -53,6 +53,7 @@ return [
         'language' => 'en_EN',
         'enabled_languages' => 'en_EN,de_DE,fr_FR,ja_JP,pl_PL',
         'title' => 'Poweradmin (SQLite)',
+        'theme' => 'modern',
         'show_pdns_status' => true,
         'show_record_comments' => true,
         'show_zone_comments' => false,
@@ -130,25 +131,30 @@ return [
     ],
 
     /**
-     * WHOIS Settings
+     * Module Settings
      */
-    'whois' => [
-        'enabled' => true,
-        'restrict_to_admin' => false,
-    ],
-
-    /**
-     * RDAP Settings
-     */
-    'rdap' => [
-        'enabled' => true,
-        'restrict_to_admin' => false,
-    ],
-
-    /**
-     * DNS Wizard Settings
-     */
-    'dns_wizards' => [
-        'enabled' => true,
+    'modules' => [
+        'csv_export' => [
+            'enabled' => true,
+        ],
+        'zone_import_export' => [
+            'enabled' => true,
+            'auto_ttl_value' => 300,
+            'max_file_size' => 1048576,
+        ],
+        'whois' => [
+            'enabled' => true,
+            'restrict_to_admin' => false,
+        ],
+        'rdap' => [
+            'enabled' => true,
+            'restrict_to_admin' => false,
+        ],
+        'email_previews' => [
+            'enabled' => true,
+        ],
+        'dns_wizards' => [
+            'enabled' => true,
+        ],
     ],
 ];

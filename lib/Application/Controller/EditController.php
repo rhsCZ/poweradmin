@@ -4,7 +4,7 @@
  *  See <https://www.poweradmin.org> for more details.
  *
  *  Copyright 2007-2010 Rejo Zenger <rejo@zenger.nl>
- *  Copyright 2010-2025 Poweradmin Development Team
+ *  Copyright 2010-2026 Poweradmin Development Team
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ use Poweradmin\Domain\Repository\ZoneRepositoryInterface;
 use Poweradmin\Domain\Service\PermissionService;
 use Poweradmin\Infrastructure\Configuration\ConfigurationManager;
 use Poweradmin\Infrastructure\Logger\LegacyLogger;
+use Poweradmin\Module\ModuleRegistry;
 use Poweradmin\Infrastructure\Repository\DbRecordCommentRepository;
 use Poweradmin\Infrastructure\Repository\DbUserRepository;
 use Poweradmin\Infrastructure\Repository\DbZoneRepository;
@@ -129,7 +130,8 @@ class EditController extends BaseController
     public function run(): void
     {
         // Set the current page for navigation highlighting
-        $this->requestData['page'] = 'edit';
+        $this->setCurrentPage('edit');
+        $this->setPageTitle(_('Edit Zone'));
 
         // Get default rows per page from config
         $default_rowamount = $this->config->get('interface', 'rows_per_page', 10);
@@ -197,11 +199,6 @@ class EditController extends BaseController
         $zone_name = $this->zoneRepository->getDomainNameById($zone_id);
         if ($zone_name === null) {
             $this->showError(_('Zone not found.'));
-            return;
-        }
-
-        if (isset($_GET['export_csv'])) {
-            $this->exportCsv($zone_id);
             return;
         }
 
@@ -497,14 +494,16 @@ class EditController extends BaseController
             'iface_zone_comments' => $iface_zone_comments,
             'serial' => DnsRecord::getSOASerial($soa_record),
             'file_version' => time(),
-            'whois_enabled' => $this->config->get('whois', 'enabled', false),
+            'whois_actions' => $this->getWhoisActions($zone_id),
             'form_token' => $formToken,
             'form_data' => $formData,
             'search_term' => $searchTerm,
             'record_type_filter' => $recordTypeFilter,
             'content_filter' => $contentFilter,
             'display_hostname_only' => $display_hostname_only,
-            'dns_wizards_enabled' => $this->config->get('dns_wizards', 'enabled', false),
+            'dns_wizard_actions' => $this->getDnsWizardActions($zone_id),
+            'export_formats' => $this->getExportFormats($zone_id),
+            'import_enabled' => $this->isImportEnabled(),
         ]);
     }
 
@@ -649,96 +648,39 @@ class EditController extends BaseController
     }
 
 
-    public function exportCsv(int $zone_id): void
+    private function getDnsWizardActions(int $zone_id): array
     {
-        // Check if user is logged in
-        if (!$this->userContextService->isAuthenticated()) {
-            $this->showError(_('You need to be logged in to export zone data.'));
-            return;
-        }
+        $isAdmin = UserManager::verifyPermission($this->db, 'user_is_ueberuser');
+        $registry = new ModuleRegistry($this->config);
+        $registry->loadModules();
+        return $registry->getCapabilityData('dns_wizard', ['zone_id' => $zone_id], $isAdmin);
+    }
 
-        // Check permissions - same as viewing zones
-        $userId = $this->userContextService->getLoggedInUserId();
-        $perm_view = $this->permissionService->getViewPermissionLevel($userId);
-        $user_is_zone_owner = UserManager::verifyUserIsOwnerZoneId($this->db, $zone_id);
+    private function getWhoisActions(int $zone_id): array
+    {
+        $isAdmin = UserManager::verifyPermission($this->db, 'user_is_ueberuser');
+        $registry = new ModuleRegistry($this->config);
+        $registry->loadModules();
+        return $registry->getCapabilityData('whois_lookup', ['zone_id' => $zone_id], $isAdmin);
+    }
 
-        if ($perm_view == "none" || ($perm_view == "own" && $user_is_zone_owner == "0")) {
-            $this->showError(_("You do not have permission to export this zone."));
-            return;
-        }
+    private function getExportFormats(int $zone_id): array
+    {
+        $registry = new ModuleRegistry($this->config);
+        $registry->loadModules();
+        return $registry->getCapabilityData('zone_export', ['zone_id' => $zone_id]);
+    }
 
-        // Validate CSRF token if using POST
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->validateCsrfToken();
-        }
-
-        $zone_name = $this->zoneRepository->getDomainNameById($zone_id);
-
-        if (!$zone_name) {
-            $this->showError(_('There is no zone with this ID.'));
-            return;
-        }
-
-        if (!$this->zoneRepository->zoneIdExists($zone_id)) {
-            $this->showError(_('There is no zone with this ID.'));
-            return;
-        }
-
-        $records = $this->dnsRecord->getRecordsFromDomainId($this->config->get('database', 'type', 'mysql'), $zone_id);
-
-        if (empty($records)) {
-            $this->showError(_('This zone does not have any records to export.'));
-            return;
-        }
-
-        // Sanitize filename to prevent header injection
-        $sanitized_filename = preg_replace('/[^a-zA-Z0-9_.-]/', '_', $zone_name);
-
-        // Set headers for CSV download with security headers
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=' . $sanitized_filename . '_records.csv');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-        header('Content-Transfer-Encoding: binary');
-
-        // Create output stream
-        $output = fopen('php://output', 'w');
-
-        // Add BOM for UTF-8
-        fputs($output, "\xEF\xBB\xBF");
-
-        // CSV header
-        $header = ['Name', 'Type', 'Content', 'Priority', 'TTL', 'Disabled'];
-
-        // Add comments column if enabled
-        if ($this->config->get('interface', 'show_record_comments', false)) {
-            $header[] = 'Comment';
-        }
-
-        fputcsv($output, $header, ',', '"', '\\');
-
-        // CSV data
-        foreach ($records as $record) {
-            $row = [
-                $record['name'],
-                $record['type'],
-                $record['content'],
-                $record['prio'],
-                $record['ttl'],
-                $record['disabled'] ? 'Yes' : 'No'
-            ];
-
-            // Add comment if enabled
-            if ($this->config->get('interface', 'show_record_comments', false)) {
-                $row[] = $record['comment'] ?? '';
+    private function isImportEnabled(): bool
+    {
+        $registry = new ModuleRegistry($this->config);
+        $registry->loadModules();
+        foreach ($registry->getEnabledModules() as $module) {
+            if (in_array('zone_import', $module->getCapabilities(), true)) {
+                return true;
             }
-
-            fputcsv($output, $row, ',', '"', '\\');
         }
-
-        fclose($output);
-        exit();
+        return false;
     }
 
     /**
