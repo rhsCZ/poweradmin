@@ -6,7 +6,7 @@
  */
 
 /**
- * Login to Poweradmin
+ * Login to Poweradmin via UI form (used by login tests that test the form itself)
  *
  * @param {import('@playwright/test').Page} page - Playwright page object
  * @param {string} username - Username for login
@@ -21,10 +21,10 @@ export async function login(page, username, password) {
 }
 
 /**
- * Login and wait for dashboard with retry logic
+ * Login and wait for dashboard with retry logic.
  *
- * PHP server-side sessions can cause intermittent login failures when
- * multiple tests run concurrently. This function retries on failure.
+ * Fills the login form and waits for the redirect concurrently using
+ * Promise.all, which is faster than sequential wait.
  *
  * @param {import('@playwright/test').Page} page - Playwright page object
  * @param {string} username - Username for login
@@ -34,43 +34,20 @@ export async function login(page, username, password) {
  */
 export async function loginAndWaitForDashboard(page, username, password, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    await login(page, username, password);
-
-    // Wait for navigation to complete after form submission
-    await page.waitForLoadState('domcontentloaded');
-
-    // Check if login succeeded - URL should indicate dashboard
-    const url = page.url();
-    if (url.endsWith('/') || url.includes('/?')) {
-      // Already on dashboard
-      return;
-    }
-
-    // Wait for redirect with longer timeout for parallel test stability
     try {
-      await page.waitForURL(/\/$|\?/, { timeout: 10000 });
-      await page.waitForLoadState('domcontentloaded');
+      await page.goto('/login');
+      await page.fill('[data-testid="username-input"]', username);
+      await page.fill('[data-testid="password-input"]', password);
+      await Promise.all([
+        page.waitForURL(url => !url.toString().includes('/login'), { timeout: 10000 }),
+        page.click('[data-testid="login-button"]'),
+      ]);
       return; // Success
     } catch {
-      // Check if authentication failed (various error messages)
-      const errorMessages = [
-        'Authentication failed',
-        'Invalid CSRF token',
-        'Invalid username or password',
-        'Session expired'
-      ];
-      const bodyText = await page.locator('body').textContent();
-      const hasRetryableError = errorMessages.some(msg => bodyText.includes(msg)) ||
-                                await page.locator('.alert-danger').count() > 0;
-
-      if (hasRetryableError && attempt < maxRetries) {
-        // Wait before retry to let session conflicts resolve
-        await page.waitForTimeout(1000 * attempt);
-        continue;
-      }
       if (attempt === maxRetries) {
         throw new Error(`Login failed after ${maxRetries} attempts for user: ${username}`);
       }
+      await page.waitForTimeout(1000 * attempt);
     }
   }
 }

@@ -242,9 +242,10 @@ test.describe('Permission Template CRUD Operations', () => {
       if (await editLink.count() > 0) {
         await editLink.click();
 
-        const uncheckedBox = page.locator('input[type="checkbox"]:not(:checked)').first();
-        if (await uncheckedBox.count() > 0) {
-          await uncheckedBox.check();
+        const uncheckedBoxes = page.locator('input[type="checkbox"]:not(:checked)');
+        const uncheckedCount = await uncheckedBoxes.count();
+        if (uncheckedCount > 0) {
+          await uncheckedBoxes.first().check();
           await page.locator('button[type="submit"], input[type="submit"]').first().click();
 
           const bodyText = await page.locator('body').textContent();
