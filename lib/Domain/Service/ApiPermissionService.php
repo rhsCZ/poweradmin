@@ -68,17 +68,38 @@ class ApiPermissionService
     /**
      * Check if user is the owner of a specific zone (stateless)
      *
+     * Checks both direct ownership (zones.owner) and group membership
+     * (zones_groups + user_group_members), matching the web UI behavior.
+     *
      * @param int $userId User ID to check
      * @param int $zoneId Zone ID (domain_id in PowerDNS)
-     * @return bool True if user owns the zone
+     * @return bool True if user owns the zone (directly or via group)
      */
     public function userOwnsZone(int $userId, int $zoneId): bool
     {
+        // Check direct ownership
         $stmt = $this->db->prepare("
             SELECT COUNT(*)
             FROM zones
             WHERE zones.owner = :user_id
             AND zones.domain_id = :zone_id
+        ");
+
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':zone_id' => $zoneId
+        ]);
+
+        if ((bool)$stmt->fetchColumn()) {
+            return true;
+        }
+
+        // Check group ownership
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*)
+            FROM zones_groups zg
+            INNER JOIN user_group_members ugm ON zg.group_id = ugm.group_id
+            WHERE ugm.user_id = :user_id AND zg.domain_id = :zone_id
         ");
 
         $stmt->execute([
@@ -355,6 +376,30 @@ class ApiPermissionService
     }
 
     /**
+     * Check if user can edit zone metadata (ownership, etc.) (stateless)
+     *
+     * @param int $userId User ID to check
+     * @param int $zoneId Zone ID (domain_id in PowerDNS)
+     * @return bool True if user can edit zone metadata
+     */
+    public function canEditZoneMeta(int $userId, int $zoneId): bool
+    {
+        if ($this->userHasPermission($userId, 'user_is_ueberuser')) {
+            return true;
+        }
+
+        if ($this->userHasPermission($userId, 'zone_meta_edit_others')) {
+            return true;
+        }
+
+        if ($this->userHasPermission($userId, 'zone_meta_edit_own')) {
+            return $this->userOwnsZone($userId, $zoneId);
+        }
+
+        return false;
+    }
+
+    /**
      * Get all zone IDs that the user is allowed to view (stateless)
      *
      * @param int $userId User ID to check
@@ -372,14 +417,16 @@ class ApiPermissionService
             return null; // null = all zones
         }
 
-        // User with zone_content_view_own can view only their own zones
+        // User with zone_content_view_own can view only their own zones (direct + group)
         if ($this->userHasPermission($userId, 'zone_content_view_own')) {
             $stmt = $this->db->prepare("
-                SELECT domain_id
-                FROM zones
-                WHERE owner = :user_id
+                SELECT domain_id FROM zones WHERE owner = :user_id
+                UNION
+                SELECT zg.domain_id FROM zones_groups zg
+                INNER JOIN user_group_members ugm ON zg.group_id = ugm.group_id
+                WHERE ugm.user_id = :user_id2
             ");
-            $stmt->execute([':user_id' => $userId]);
+            $stmt->execute([':user_id' => $userId, ':user_id2' => $userId]);
             return $stmt->fetchAll(\PDO::FETCH_COLUMN);
         }
 
