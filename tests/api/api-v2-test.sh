@@ -1080,6 +1080,68 @@ test_zone_owners() {
         print_fail "Expected 400 for missing user_id, got HTTP $http_code"
     fi
 
+    # Remove test user owner first so batch add can re-add them
+    api_request_groups DELETE "/zones/${TEST_OWNER_ZONE_ID}/owners/${TEST_OWNER_USER_ID}" >/dev/null 2>&1 || true
+
+    # Test 8b: Batch add owners using user_ids
+    increment_test
+    print_test "Batch add owners using user_ids"
+    response=$(api_request_groups POST "/zones/${TEST_OWNER_ZONE_ID}/owners" "{\"user_ids\": [${TEST_OWNER_USER_ID}, 1]}")
+    http_code=$(echo "$response" | tail -n1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" == "201" ]]; then
+        local added_count=$(echo "$body" | jq -r '.data.added | length')
+        local skipped_count=$(echo "$body" | jq -r '.data.skipped | length')
+        if [[ "$added_count" -ge 1 ]]; then
+            print_pass "Batch add owners returned 201 (added: $added_count, skipped: $skipped_count)"
+        else
+            print_fail "Expected at least 1 added, got added=$added_count skipped=$skipped_count"
+        fi
+    else
+        print_fail "Expected 201 for batch add, got HTTP $http_code"
+    fi
+
+    # Test 8c: Batch add with already assigned users (should skip them)
+    increment_test
+    print_test "Batch add with already assigned owners (skipped)"
+    response=$(api_request_groups POST "/zones/${TEST_OWNER_ZONE_ID}/owners" "{\"user_ids\": [${TEST_OWNER_USER_ID}, 1]}")
+    http_code=$(echo "$response" | tail -n1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" == "201" ]]; then
+        local skipped=$(echo "$body" | jq -r '.data.skipped | length')
+        local added=$(echo "$body" | jq -r '.data.added | length')
+        if [[ "$added" == "0" && "$skipped" -ge 1 ]]; then
+            print_pass "All users correctly skipped as already assigned"
+        else
+            print_fail "Expected 0 added and skipped >= 1, got added=$added skipped=$skipped"
+        fi
+    else
+        print_fail "Expected 201 for batch add, got HTTP $http_code"
+    fi
+
+    # Test 8d: Batch add with non-existent users (reports not_found)
+    increment_test
+    print_test "Batch add with non-existent users"
+    response=$(api_request_groups POST "/zones/${TEST_OWNER_ZONE_ID}/owners" '{"user_ids": [999998, 999999]}')
+    http_code=$(echo "$response" | tail -n1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" == "201" ]]; then
+        local not_found=$(echo "$body" | jq -r '.data.not_found | length')
+        if [[ "$not_found" == "2" ]]; then
+            print_pass "Non-existent users correctly reported in not_found ($not_found)"
+        else
+            print_fail "Expected 2 not_found, got $not_found"
+        fi
+    else
+        print_fail "Expected 201 for batch add, got HTTP $http_code"
+    fi
+
+    # Clean up batch-added owners before removal tests
+    api_request_groups DELETE "/zones/${TEST_OWNER_ZONE_ID}/owners/1" >/dev/null 2>&1 || true
+
     # Test 9: Remove owner from zone
     increment_test
     print_test "Remove owner from zone"
