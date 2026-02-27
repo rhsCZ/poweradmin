@@ -43,7 +43,6 @@ use Poweradmin\Domain\Service\ZoneValidationService;
 use Poweradmin\Domain\Utility\DnsHelper;
 use Poweradmin\Infrastructure\Logger\LegacyLogger;
 use Poweradmin\Infrastructure\Repository\DbUserGroupRepository;
-use Poweradmin\Infrastructure\Repository\DbZoneGroupRepository;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class AddZoneMasterController extends BaseController
@@ -124,16 +123,9 @@ class AddZoneMasterController extends BaseController
         } elseif ($dnsRecord->domainExists($zone_name) || $dnsRecord->recordNameExists($zone_name)) {
             $this->setMessage('add_zone_master', 'error', _('There is already a zone with this name.'));
             $this->showForm();
-        } elseif ($dnsRecord->addDomain($this->db, $zone_name, $owner, $dom_type, '', $zone_template)) {
+        } elseif ($dnsRecord->addDomain($this->db, $zone_name, $owner, $dom_type, '', $zone_template, $selected_groups)) {
             $zone_id = $dnsRecord->getZoneIdFromName($zone_name);
 
-            // Add group ownership if groups were selected
-            if (!empty($selected_groups)) {
-                $zoneGroupRepo = new DbZoneGroupRepository($this->db, $this->getConfig());
-                foreach ($selected_groups as $groupId) {
-                    $zoneGroupRepo->add($zone_id, $groupId);
-                }
-            }
             $this->logger->logInfo(sprintf(
                 'client_ip:%s user:%s operation:add_zone zone_name:%s zone_type:%s zone_template:%s',
                 $_SERVER['REMOTE_ADDR'],

@@ -40,7 +40,6 @@ use Poweradmin\Domain\Service\DnsValidation\IPAddressValidator;
 use Poweradmin\Domain\Utility\DnsHelper;
 use Poweradmin\Infrastructure\Logger\LegacyLogger;
 use Poweradmin\Infrastructure\Repository\DbUserGroupRepository;
-use Poweradmin\Infrastructure\Repository\DbZoneGroupRepository;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class AddZoneSlaveController extends BaseController
@@ -120,16 +119,9 @@ class AddZoneSlaveController extends BaseController
             $this->showForm();
         } else {
             $dnsRecord = new DnsRecord($this->db, $this->getConfig());
-            if ($dnsRecord->addDomain($this->db, $zone, $owner, $type, $master, 'none')) {
+            if ($dnsRecord->addDomain($this->db, $zone, $owner, $type, $master, 'none', $selected_groups)) {
                 $zone_id = $dnsRecord->getZoneIdFromName($zone);
 
-                // Add group ownership if groups were selected
-                if (!empty($selected_groups)) {
-                    $zoneGroupRepo = new DbZoneGroupRepository($this->db, $this->getConfig());
-                    foreach ($selected_groups as $groupId) {
-                        $zoneGroupRepo->add($zone_id, $groupId);
-                    }
-                }
                 $this->logger->logInfo(sprintf(
                     'client_ip:%s user:%s operation:add_zone zone:%s zone_type:SLAVE zone_master:%s',
                     $_SERVER['REMOTE_ADDR'],
