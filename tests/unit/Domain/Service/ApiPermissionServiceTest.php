@@ -86,6 +86,22 @@ class ApiPermissionServiceTest extends TestCase
     }
 
     #[Test]
+    public function testUserHasPermissionChecksGroupMemberships(): void
+    {
+        $stmt = $this->createMock(PDOStatement::class);
+        $stmt->method('execute')->willReturn(true);
+        $stmt->method('fetchColumn')->willReturn(1);
+
+        $this->db->expects($this->once())
+            ->method('prepare')
+            ->with($this->stringContains('user_group_members'))
+            ->willReturn($stmt);
+
+        $result = $this->service->userHasPermission(1, 'zone_master_add');
+        $this->assertTrue($result);
+    }
+
+    #[Test]
     public function testUserOwnsZoneReturnsTrue(): void
     {
         $stmt = $this->createMock(PDOStatement::class);

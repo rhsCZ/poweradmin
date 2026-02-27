@@ -49,17 +49,32 @@ class ApiPermissionService
     public function userHasPermission(int $userId, string $permissionName): bool
     {
         $stmt = $this->db->prepare("
-            SELECT COUNT(*)
-            FROM perm_templ_items
-            INNER JOIN perm_items ON perm_templ_items.perm_id = perm_items.id
-            INNER JOIN users ON perm_templ_items.templ_id = users.perm_templ
-            WHERE users.id = :user_id
-            AND perm_items.name = :permission_name
+            SELECT COUNT(*) FROM (
+                SELECT perm_items.id
+                FROM perm_templ_items
+                INNER JOIN perm_items ON perm_templ_items.perm_id = perm_items.id
+                INNER JOIN users ON perm_templ_items.templ_id = users.perm_templ
+                WHERE users.id = :user_id
+                AND perm_items.name = :permission_name
+
+                UNION
+
+                SELECT pi.id
+                FROM user_group_members ugm
+                INNER JOIN user_groups ug ON ugm.group_id = ug.id
+                INNER JOIN perm_templ pt ON ug.perm_templ = pt.id
+                INNER JOIN perm_templ_items pti ON pt.id = pti.templ_id
+                INNER JOIN perm_items pi ON pti.perm_id = pi.id
+                WHERE ugm.user_id = :user_id2
+                AND pi.name = :permission_name2
+            ) AS combined
         ");
 
         $stmt->execute([
             ':user_id' => $userId,
-            ':permission_name' => $permissionName
+            ':permission_name' => $permissionName,
+            ':user_id2' => $userId,
+            ':permission_name2' => $permissionName
         ]);
 
         return (bool)$stmt->fetchColumn();
