@@ -103,6 +103,23 @@ class AddZoneSlaveController extends BaseController
             return;
         }
 
+        // Validate submitted group IDs against user's allowed groups
+        if (!empty($selected_groups)) {
+            $isAdmin = UserManager::verifyPermission($this->db, 'user_is_ueberuser');
+            if (!$isAdmin) {
+                $userGroupRepo = new DbUserGroupRepository($this->db);
+                $allowedGroups = $userGroupRepo->findByUserId($_SESSION['userid']);
+                $allowedGroupIds = array_map(fn($g) => $g->getId(), $allowedGroups);
+                $selected_groups = array_values(array_intersect($selected_groups, $allowedGroupIds));
+
+                if (empty($selected_groups) && $owner === null) {
+                    $this->setMessage('add_zone_slave', 'error', _('At least one user or group must be selected as owner.'));
+                    $this->showForm();
+                    return;
+                }
+            }
+        }
+
         $dnsRecord = new DnsRecord($this->db, $this->getConfig());
         $hostnameValidator = new HostnameValidator($this->config);
         if (!$hostnameValidator->isValid($zone)) {
@@ -167,9 +184,10 @@ class AddZoneSlaveController extends BaseController
 
         $is_post_request = !empty($_POST);
 
-        // Fetch all groups for the dropdown
+        // Fetch groups for the dropdown - admins see all, others see only their own
         $userGroupRepo = new DbUserGroupRepository($this->db);
-        $allGroups = $userGroupRepo->findAll();
+        $isAdmin = UserManager::verifyPermission($this->db, 'user_is_ueberuser');
+        $allGroups = $isAdmin ? $userGroupRepo->findAll() : $userGroupRepo->findByUserId($_SESSION['userid']);
 
         // Handle selected groups on error re-render
         $selected_groups = isset($_POST['groups']) && is_array($_POST['groups']) ?
