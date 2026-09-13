@@ -4,7 +4,7 @@
  *  See <https://www.poweradmin.org> for more details.
  *
  *  Copyright 2007-2010 Rejo Zenger <rejo@zenger.nl>
- *  Copyright 2010-2025 Poweradmin Development Team
+ *  Copyright 2010-2026 Poweradmin Development Team
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 namespace Poweradmin\Domain\Service;
 
 use Exception;
+use Poweradmin\Application\Service\PasswordPolicyService;
+use Poweradmin\Application\Service\UserAuthenticationService;
 use Poweradmin\Domain\Repository\UserGroupRepositoryInterface;
 use Poweradmin\Domain\Repository\UserRepository;
 use Poweradmin\Domain\Model\Pagination;
@@ -38,14 +40,23 @@ class UserManagementService
 {
     private UserRepository $userRepository;
     private UserProfileAssembler $profileAssembler;
+    private UserAuthenticationService $authService;
+    private PasswordPolicyService $passwordPolicy;
+    private bool $ldapEnabled;
 
     public function __construct(
         UserRepository $userRepository,
         PermissionService $permissionService,
-        UserGroupRepositoryInterface $groupRepository
+        UserGroupRepositoryInterface $groupRepository,
+        UserAuthenticationService $authService,
+        PasswordPolicyService $passwordPolicy,
+        bool $ldapEnabled = false
     ) {
         $this->userRepository = $userRepository;
         $this->profileAssembler = new UserProfileAssembler($permissionService, $groupRepository);
+        $this->authService = $authService;
+        $this->passwordPolicy = $passwordPolicy;
+        $this->ldapEnabled = $ldapEnabled;
     }
 
     /**
@@ -193,12 +204,21 @@ class UserManagementService
             ];
         }
 
-        if (empty($userData['password'])) {
+        if (($ldapError = $this->normalizeUseLdap($userData)) !== null) {
+            return $ldapError;
+        }
+        $useLdap = ($userData['use_ldap'] ?? 0) === 1;
+
+        if (!$useLdap && !self::passwordGiven($userData)) {
             return [
                 'success' => false,
                 'message' => 'Password is required',
                 'status' => 400
             ];
+        }
+
+        if (!$useLdap && ($policyError = $this->passwordPolicyError($userData['password'])) !== null) {
+            return $policyError;
         }
 
         if (($lengthError = $this->validateFieldLengths($userData)) !== null) {
@@ -244,8 +264,9 @@ class UserManagementService
         $userData['perm_templ'] = $permTemplId;
 
         try {
-            // Hash the password before storing
-            $userData['password'] = password_hash($userData['password'], PASSWORD_DEFAULT);
+            $userData['password'] = $useLdap
+                ? AuthMethod::LDAP_PASSWORD_PLACEHOLDER
+                : $this->authService->hashPassword($userData['password']);
 
             $userId = $this->userRepository->createUser($userData);
 
@@ -280,8 +301,8 @@ class UserManagementService
      */
     public function updateUser(int $userId, array $userData): array
     {
-        // Check if user exists
-        if (!$this->userExists($userId)) {
+        $user = $this->userRepository->getUserById($userId);
+        if ($user === null) {
             return [
                 'success' => false,
                 'message' => 'User not found',
@@ -295,6 +316,46 @@ class UserManagementService
 
         if (($emptyError = $this->validateFieldsNotEmpty($userData)) !== null) {
             return $emptyError;
+        }
+
+        if (($ldapError = $this->normalizeUseLdap($userData)) !== null) {
+            return $ldapError;
+        }
+
+        // Judge by the method the repository will persist, so switching an LDAP
+        // account back to SQL in the same request may (and must) set a password.
+        $storedMethod = AuthMethod::fromDb($user['auth_method'] ?? null);
+        $targetMethod = array_key_exists('use_ldap', $userData)
+            ? AuthMethod::resolve($userData['use_ldap'] === 1, $user['auth_method'] ?? null)
+            : $storedMethod;
+        $passwordGiven = self::passwordGiven($userData);
+
+        if ($passwordGiven && $targetMethod->isExternal()) {
+            return [
+                'success' => false,
+                'message' => sprintf(
+                    'Cannot set password for %s authenticated users. This user authenticates via %s.',
+                    strtoupper($targetMethod->value),
+                    strtoupper($targetMethod->value)
+                ),
+                'status' => 400
+            ];
+        }
+
+        if ($targetMethod === AuthMethod::LDAP && $storedMethod !== AuthMethod::LDAP) {
+            $userData['password'] = AuthMethod::LDAP_PASSWORD_PLACEHOLDER;
+        }
+
+        if ($storedMethod === AuthMethod::LDAP && $targetMethod === AuthMethod::SQL && !$passwordGiven) {
+            return [
+                'success' => false,
+                'message' => 'Password is required when disabling LDAP authentication',
+                'status' => 400
+            ];
+        }
+
+        if ($passwordGiven && ($policyError = $this->passwordPolicyError($userData['password'])) !== null) {
+            return $policyError;
         }
 
         // Check if username already exists (exclude current user)
@@ -352,24 +413,8 @@ class UserManagementService
         }
 
         try {
-            // Check if attempting to set password for external auth user
-            if (!empty($userData['password'])) {
-                $user = $this->userRepository->getUserById($userId);
-                $authMethod = $user['auth_method'] ?? 'sql';
-                if (AuthMethod::fromDb($authMethod)->isExternal()) {
-                    return [
-                        'success' => false,
-                        'message' => sprintf(
-                            'Cannot set password for %s authenticated users. This user authenticates via %s.',
-                            strtoupper($authMethod),
-                            strtoupper($authMethod)
-                        ),
-                        'status' => 400
-                    ];
-                }
-
-                // Hash password if allowed
-                $userData['password'] = password_hash($userData['password'], PASSWORD_DEFAULT);
+            if ($passwordGiven) {
+                $userData['password'] = $this->authService->hashPassword($userData['password']);
             }
 
             $success = $this->userRepository->updateUser($userId, $userData);
@@ -561,6 +606,59 @@ class UserManagementService
                 'status' => 500
             ];
         }
+    }
+
+    /**
+     * Coerces use_ldap to 0/1 in place so the service and the repository agree on it.
+     * Missing on create means 0; missing on update leaves the stored value alone.
+     */
+    private function normalizeUseLdap(array &$userData): ?array
+    {
+        if (!array_key_exists('use_ldap', $userData)) {
+            return null;
+        }
+
+        $useLdap = filter_var($userData['use_ldap'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($useLdap === null) {
+            return [
+                'success' => false,
+                'message' => 'use_ldap must be a boolean',
+                'status' => 400
+            ];
+        }
+
+        if ($useLdap && !$this->ldapEnabled) {
+            return [
+                'success' => false,
+                'message' => 'LDAP authentication is not enabled',
+                'status' => 400
+            ];
+        }
+
+        $userData['use_ldap'] = $useLdap ? 1 : 0;
+
+        return null;
+    }
+
+    /** Only the empty string means "leave unchanged"; "0" is a password. */
+    public static function passwordGiven(array $userData): bool
+    {
+        return isset($userData['password']) && (string)$userData['password'] !== '';
+    }
+
+    /** First policy violation as a 400 result, or null when the password passes. */
+    private function passwordPolicyError(#[\SensitiveParameter] string $password): ?array
+    {
+        $errors = $this->passwordPolicy->validatePassword($password);
+        if ($errors === []) {
+            return null;
+        }
+
+        return [
+            'success' => false,
+            'message' => $errors[0],
+            'status' => 400
+        ];
     }
 
     /**

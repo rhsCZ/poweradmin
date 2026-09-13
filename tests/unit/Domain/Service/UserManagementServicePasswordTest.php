@@ -4,7 +4,7 @@
  *  See <https://www.poweradmin.org> for more details.
  *
  *  Copyright 2007-2010 Rejo Zenger <rejo@zenger.nl>
- *  Copyright 2010-2025 Poweradmin Development Team
+ *  Copyright 2010-2026 Poweradmin Development Team
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 namespace Poweradmin\Tests\Unit\Domain\Service;
 
 use PHPUnit\Framework\TestCase;
+use Poweradmin\Application\Service\PasswordPolicyService;
+use Poweradmin\Application\Service\UserAuthenticationService;
 use Poweradmin\Domain\Repository\UserGroupRepositoryInterface;
 use Poweradmin\Domain\Service\UserManagementService;
 use Poweradmin\Domain\Service\PermissionService;
@@ -44,10 +46,14 @@ class UserManagementServicePasswordTest extends TestCase
         $this->userRepository = $this->createMock(DbUserRepository::class);
         $this->permissionService = $this->createMock(PermissionService::class);
         $this->groupRepository = $this->createMock(UserGroupRepositoryInterface::class);
+        $passwordPolicy = $this->createMock(PasswordPolicyService::class);
+        $passwordPolicy->method('validatePassword')->willReturn([]);
         $this->userManagementService = new UserManagementService(
             $this->userRepository,
             $this->permissionService,
-            $this->groupRepository
+            $this->groupRepository,
+            new UserAuthenticationService('bcrypt', 4),
+            $passwordPolicy
         );
     }
 

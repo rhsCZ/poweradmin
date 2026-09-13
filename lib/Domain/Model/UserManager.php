@@ -310,7 +310,7 @@ class UserManager
                     $config->get('security', 'password_cost', 12)
                 );
 
-                $passwordHash = $useLdap ? 'LDAP_USER' : $userAuthService->hashPassword($user_password);
+                $passwordHash = $useLdap ? AuthMethod::LDAP_PASSWORD_PLACEHOLDER : $userAuthService->hashPassword($user_password);
                 $query .= ", password = :password";
             }
 
@@ -546,7 +546,7 @@ class UserManager
         if ($ldap_use && isset($details['use_ldap']) && $details['use_ldap'] == 1) {
             $use_ldap = 1;
             $auth_method = AuthMethod::resolve(true, null)->value;
-            $password_hash = 'LDAP_USER';
+            $password_hash = AuthMethod::LDAP_PASSWORD_PLACEHOLDER;
         } else {
             $use_ldap = 0;
             $auth_method = AuthMethod::resolve(false, null)->value;
