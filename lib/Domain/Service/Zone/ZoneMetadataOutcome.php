@@ -33,8 +33,10 @@ enum ZoneMetadataOutcome: string
     case EMPTY_VALUES = 'empty_values';
     case SINGLE_VALUE_ONLY = 'single_value_only';
     case INVALID_VALUE = 'invalid_value';
+    case INVALID_TEXT = 'invalid_text';
     case COMPANION_REQUIRED = 'companion_required';
     case OPERATOR_ONLY = 'operator_only';
+    case DNSSEC_REQUIRED = 'dnssec_required';
     case SERVER_MANAGED = 'server_managed';
     case NO_API_ROUTE = 'no_api_route';
     case CUSTOM_PREFIX = 'custom_prefix';

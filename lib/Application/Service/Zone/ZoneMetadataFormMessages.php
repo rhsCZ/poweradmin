@@ -40,6 +40,7 @@ final class ZoneMetadataFormMessages
             ZoneMetadataOutcome::EMPTY_VALUES => sprintf(_('Metadata kind %s needs a value.'), $kind),
             ZoneMetadataOutcome::SINGLE_VALUE_ONLY => sprintf(_('Metadata kind %s accepts only a single value. Add only one row for this kind.'), $kind),
             ZoneMetadataOutcome::INVALID_VALUE => sprintf(_('Invalid value for %s. Allowed values: %s.'), $kind, implode(', ', $result->options ?? [])),
+            ZoneMetadataOutcome::INVALID_TEXT => sprintf(_('The %s field contains invalid characters.'), $kind),
             ZoneMetadataOutcome::COMPANION_REQUIRED => sprintf(
                 _('Metadata kind %s only takes effect together with %s. Add a %s row as well.'),
                 $kind,
@@ -47,6 +48,7 @@ final class ZoneMetadataFormMessages
                 (string)$result->companion
             ),
             ZoneMetadataOutcome::OPERATOR_ONLY => sprintf(_('Metadata kind %s can only be changed by an administrator.'), $kind),
+            ZoneMetadataOutcome::DNSSEC_REQUIRED => sprintf(_('Metadata kind %s needs the DNSSEC management permission on this zone.'), $kind),
             ZoneMetadataOutcome::SERVER_MANAGED => sprintf(_('Metadata kind %s is maintained by PowerDNS and cannot be changed here.'), $kind),
             ZoneMetadataOutcome::NO_API_ROUTE => sprintf(_('Metadata kind %s cannot be changed while the PowerDNS API backend is in use.'), $kind),
             ZoneMetadataOutcome::CUSTOM_PREFIX => sprintf(

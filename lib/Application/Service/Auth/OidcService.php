@@ -51,6 +51,7 @@ final class OidcService
     // __Host- stops a sibling host planting one.
     private const FLOW_COOKIE_NAME = '__Host-oidc_flow';
     private const FLOW_COOKIE_TTL = 300;
+    private const FLOW_COOKIE_CLOCK_SKEW = 30;
 
     private LoggerInterface $logger;
     private ConfigurationInterface $configManager;
@@ -408,7 +409,7 @@ final class OidcService
                     }
 
                     // Use our centralized MFA session manager to set MFA required
-                    (new MfaSessionManager($this->session, $this->logger))->setMfaRequired($userId);
+                    (new MfaSessionManager($this->session, $this->logger))->setMfaRequired($userId, $this->mfaService->sessionBinding($userId));
 
                     // Clean up temporary session data
                     $this->unsetSessionValue('oidc_state');
@@ -526,6 +527,19 @@ final class OidcService
         return new GenericProvider($options, ['httpClient' => $httpClient]);
     }
 
+    private static function jwksUrlIsSecure(string $url): bool
+    {
+        $parts = parse_url($url);
+        $scheme = strtolower((string)($parts['scheme'] ?? ''));
+        if ($scheme === 'https') {
+            return true;
+        }
+
+        $host = strtolower(trim((string)($parts['host'] ?? ''), '[]'));
+
+        return $scheme === 'http' && in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+    }
+
     /**
      * Verifies the ID token when verification is on for the provider, and throws when it fails.
      *
@@ -546,10 +560,14 @@ final class OidcService
         if (!is_string($issuer) || $issuer === '' || !is_string($jwksUrl) || $jwksUrl === '') {
             throw new RuntimeException('No issuer or JWKS URL is known for provider ' . $providerId);
         }
+        if (!self::jwksUrlIsSecure($jwksUrl)) {
+            // The keys that vouch for the token must not travel in clear text, or be swapped by whoever sits on the path
+            throw new RuntimeException('The JWKS URL of provider ' . $providerId . ' must use https (http is allowed only for localhost)');
+        }
 
         $verifier = $this->idTokenVerifier ?? new OidcIdTokenVerifier(
             $this->logger,
-            static fn(string $url): string => (string)$provider->getHttpClient()->request('GET', $url, ['timeout' => 10, 'allow_redirects' => ['protocols' => ['https']]])->getBody(),
+            static fn(string $url): string => (string)$provider->getHttpClient()->request('GET', $url, ['timeout' => 10])->getBody(),
             dirname(__DIR__, 4) . '/var/cache/oidc'
         );
 
@@ -764,6 +782,7 @@ final class OidcService
             'provider' => $providerId,
             'verifier' => $codeVerifier,
             'nonce' => $nonce,
+            'iat' => time(),
         ]);
 
         $this->writeFlowCookie($this->flowEncryptionService()->encrypt($payload), time() + self::FLOW_COOKIE_TTL);
@@ -785,6 +804,14 @@ final class OidcService
 
         if (!is_array($payload) || empty($payload['state']) || empty($payload['provider']) || empty($payload['verifier'])) {
             $this->logger->warning('OIDC flow cookie has an invalid payload');
+            return;
+        }
+
+        // The cookie expiry is only advice to the browser, so the age is enforced here
+        $issuedAt = $payload['iat'] ?? null;
+        $age = is_int($issuedAt) ? time() - $issuedAt : null;
+        if ($age === null || $age > self::FLOW_COOKIE_TTL || $age < -self::FLOW_COOKIE_CLOCK_SKEW) {
+            $this->logger->warning('OIDC flow cookie is expired or has no valid issue time');
             return;
         }
 

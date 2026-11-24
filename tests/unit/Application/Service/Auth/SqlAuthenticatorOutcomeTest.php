@@ -44,6 +44,7 @@ use Poweradmin\Domain\Service\Auth\SessionKeys;
 use Poweradmin\Domain\Config\ConfigurationInterface;
 use Psr\Log\NullLogger;
 use Poweradmin\Infrastructure\Session\ArraySession;
+use Poweradmin\Infrastructure\Session\MfaSessionManager;
 
 /**
  * Pins what SqlAuthenticator decides for good, wrong, unknown, disabled, locked
@@ -152,8 +153,18 @@ class SqlAuthenticatorOutcomeTest extends TestCase
 
         $outcome = $this->authenticator($this->userRow(['active' => 0]))->authenticate($this->login('alice', self::PASSWORD));
 
-        $this->assertFailure($outcome, 'The user account is disabled.');
+        $this->assertFailure($outcome, 'The user account is disabled.', true);
         $this->assertFalse($this->session->has(SessionKeys::USERID));
+    }
+
+    public function testDisabledAccountOnALaterRequestEndsTheSession(): void
+    {
+        $this->storeCredentials('alice', self::PASSWORD);
+        $this->audit->expects($this->never())->method('logLoginFailed');
+
+        $outcome = $this->authenticator($this->userRow(['active' => 0]))->authenticate();
+
+        $this->assertFailure($outcome, 'The user account is disabled.', true);
     }
 
     public function testLockedAccountIsRefusedBeforeThePasswordIsChecked(): void
@@ -205,6 +216,36 @@ class SqlAuthenticatorOutcomeTest extends TestCase
         $this->assertFalse($this->session->get(SessionKeys::AUTHENTICATED));
     }
 
+    public function testASessionVerifiedUnderAnEarlierEnrolmentIsParkedAsPending(): void
+    {
+        $this->mfaEnabled = true;
+        $this->storeCredentials('alice', self::PASSWORD);
+        $this->session->set(SessionKeys::USERID, 7);
+        (new MfaSessionManager($this->session))->setMfaVerified('old-enrolment');
+        $this->mfa->method('isMfaEnabled')->with(7)->willReturn(true);
+        $this->mfa->method('sessionBinding')->with(7)->willReturn('new-enrolment');
+
+        $outcome = $this->authenticator($this->userRow())->authenticate();
+
+        $this->assertSame(AuthOutcomeStatus::MfaRequired, $outcome->status);
+        $this->assertTrue((new MfaSessionManager($this->session))->isMfaRequired());
+    }
+
+    public function testASessionVerifiedUnderTheCurrentEnrolmentStaysVerified(): void
+    {
+        $this->mfaEnabled = true;
+        $this->storeCredentials('alice', self::PASSWORD);
+        $this->session->set(SessionKeys::USERID, 7);
+        (new MfaSessionManager($this->session))->setMfaVerified('enrolment');
+        $this->mfa->method('isMfaEnabled')->with(7)->willReturn(true);
+        $this->mfa->method('sessionBinding')->with(7)->willReturn('enrolment');
+
+        $outcome = $this->authenticator($this->userRow())->authenticate();
+
+        $this->assertFalse((new MfaSessionManager($this->session))->isMfaRequired());
+        $this->assertSame(AuthOutcomeStatus::MfaRequired, $outcome->status);
+    }
+
     public function testMfaEnrolledUserOnTheLoginPostIsSentToTheVerificationForm(): void
     {
         $this->mfaEnabled = true;
@@ -247,11 +288,11 @@ class SqlAuthenticatorOutcomeTest extends TestCase
         $this->assertSame(AuthOutcomeStatus::Success, $outcome->status);
     }
 
-    private function assertFailure(AuthOutcome $outcome, string $message): void
+    private function assertFailure(AuthOutcome $outcome, string $message, bool $endSession = false): void
     {
         $this->assertSame(AuthOutcomeStatus::Failure, $outcome->status);
         $this->assertSame($message, $outcome->message);
-        $this->assertFalse($outcome->endSession);
+        $this->assertSame($endSession, $outcome->endSession);
         $this->assertNull($outcome->redirectPath);
     }
 

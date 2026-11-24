@@ -1243,6 +1243,14 @@ msgstr ""
 "Teastaíonn cearta riarthóra chun teimpléad ceadanna a bhfuil cearta "
 "riarthóra aige a chur in eagar."
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"Éilíonn sé cearta riarthóra an cead éigeantach MFA a bhaint de theimpléad "
+"ceadanna atá ag riarthóir."
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "Níorbh fhéidir an teimpléad ceadanna a nuashonrú."
@@ -2433,6 +2441,11 @@ msgstr ""
 #, php-format
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr "Ní féidir ach le riarthóir an cineál meiteashonraí %s a athrú."
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "Éilíonn an cineál meiteashonraí %s cead bainistíochta DNSSEC ar an gcrios seo."
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -10423,6 +10436,10 @@ msgstr ""
 "Nótaí tráchta taifead a scipeáladh: %d. Tá nótaí tráchta taifead "
 "díchumasaithe sa chumraíocht."
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... agus %d rabhadh eile"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -17055,3 +17072,15 @@ msgstr "D'athraigh duine eile an t-úsáideoir %s tar éis duit an liosta seo a 
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "Ní leis an úsáideoir seo crios ar roghnaigh tú gníomh dó."
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "Tá carachtair neamhbhailí sa réimse %s."
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "Cuir taifid díchumasaithe san áireamh"

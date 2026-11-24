@@ -1226,6 +1226,14 @@ msgstr ""
 "Rendszergazdai jogokkal rendelkező engedélysablon szerkesztése "
 "rendszergazdai jogosultságot igényel."
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"A kötelező MFA-engedély eltávolítása egy rendszergazda által használt "
+"jogosultsági sablonból rendszergazdai jogosultságot igényel."
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "Az engedélysablont nem sikerült frissíteni."
@@ -2351,6 +2359,11 @@ msgstr ""
 #, php-format
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr "A %s metaadat-típust csak rendszergazda módosíthatja."
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "A(z) %s metaadattípus módosításához DNSSEC-kezelési jogosultság szükséges ezen a zónán."
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -10241,6 +10254,10 @@ msgstr ""
 "Kihagyott rekordmegjegyzések: %d. A rekordmegjegyzések ki vannak kapcsolva a "
 "konfigurációban."
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... és még %d figyelmeztetés"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -16780,3 +16797,15 @@ msgstr "Valaki más módosította a(z) %s felhasználót, miután megnyitotta ez
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "Egy zóna, amelyhez műveletet választott, nem ehhez a felhasználóhoz tartozik."
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "A(z) %s mező érvénytelen karaktereket tartalmaz."
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "Letiltott rekordok belefoglalása"

@@ -34,6 +34,7 @@ use Poweradmin\Domain\Enum\AuthMethod;
 use Poweradmin\Domain\Model\UberuserChange;
 use Poweradmin\Domain\Service\User\FullName;
 use Poweradmin\Domain\Service\User\LastSuperAdminGuard;
+use Poweradmin\Domain\Service\User\UserManagementService;
 
 /**
  * Creates or updates the local user for an LDAP, OIDC or SAML login and maps their groups to a permission template.
@@ -169,6 +170,16 @@ class UserProvisioningService
                         ['method' => strtoupper($authMethod), 'id' => $existingUserId, 'provider' => $providerId]
                     );
                     $existingUserId = null;
+                }
+
+                if ($existingUserId !== null && $this->accountSignsInExternally($existingUserId)) {
+                    // An LDAP or header account keeps its own sign-in; an address the user may control in the
+                    // directory is not proof of the identity, and linking would let both sign-ins share the account.
+                    $this->logger->warning(
+                        'Refusing {method} sign-in: its email matches account {id}, which signs in through LDAP or a remote-user header; link it by deleting the account or clearing its address',
+                        ['method' => strtoupper($authMethod), 'id' => $existingUserId]
+                    );
+                    return null;
                 }
 
                 if ($existingUserId !== null && $this->accountHasLocalPassword($existingUserId)) {
@@ -420,6 +431,19 @@ class UserProvisioningService
         }
     }
 
+    private function accountSignsInExternally(int $userId): bool
+    {
+        try {
+            $method = $this->userRepository->getProvisioningProfile($userId)['auth_method'] ?? null;
+        } catch (\Exception $e) {
+            // Fail closed: an unreadable account must not be linked
+            $this->logger->error('Error checking account auth method: {error}', ['error' => $e->getMessage()]);
+            return true;
+        }
+
+        return in_array($method, [self::AUTH_METHOD_LDAP, self::AUTH_METHOD_REMOTE_USER], true);
+    }
+
     private function accountHasLocalPassword(int $userId): bool
     {
         try {
@@ -439,6 +463,38 @@ class UserProvisioningService
             $this->logger->error('Error finding user by email: {error}', ['error' => $e->getMessage()]);
             return null;
         }
+    }
+
+    /**
+     * The address stored on a new account: blank when another account already holds it, or
+     * when require_verified_email is on and the provider did not confirm it. The sign-in proceeds.
+     */
+    private function emailForNewUser(UserInfoInterface $userInfo, string $authMethod): string
+    {
+        $email = (string)$userInfo->getEmail();
+        if ($email === '') {
+            return '';
+        }
+
+        if (($this->getAuthMethodConfig($authMethod)['require_verified_email'] ?? false) && !$this->claimsEmailVerified($userInfo)) {
+            $this->logger->warning('Not storing email {email} on the new {method} account {username}: require_verified_email is on and the provider did not confirm it', [
+                'email' => $email,
+                'method' => strtoupper($authMethod),
+                'username' => $userInfo->getUsername()
+            ]);
+            return '';
+        }
+
+        if ($this->userRepository->emailUsedByOtherUser(0, $email)) {
+            $this->logger->warning('Not storing email {email} on the new {method} account {username}: another account already uses it', [
+                'email' => $email,
+                'method' => strtoupper($authMethod),
+                'username' => $userInfo->getUsername()
+            ]);
+            return '';
+        }
+
+        return $email;
     }
 
     private function createNewUser(UserInfoInterface $userInfo, string $providerId, string $authMethod = self::AUTH_METHOD_OIDC): ?int
@@ -463,6 +519,14 @@ class UserProvisioningService
             // variant would never be matched again - fail instead of uniquifying.
             $username = $userInfo->getUsername();
             if ($authMethod === self::AUTH_METHOD_LDAP || $authMethod === self::AUTH_METHOD_REMOTE_USER) {
+                // Sign-in matches the name exactly, so a cleaned copy would never be found again
+                if (!UserManagementService::isCleanUsername($username)) {
+                    $this->logger->error('Cannot auto-provision {method} user {username}: the username has surrounding whitespace or control characters', [
+                        'method' => strtoupper($authMethod),
+                        'username' => $username
+                    ]);
+                    return null;
+                }
                 if ($this->usernameExists($username)) {
                     $this->logger->error('Cannot auto-provision {method} user {username}: username is taken by another account', [
                         'method' => strtoupper($authMethod),
@@ -471,16 +535,24 @@ class UserProvisioningService
                     return null;
                 }
             } else {
+                // Single sign-on accounts are found by the provider's subject, so the name only needs cleaning
+                $username = UserManagementService::cleanUsername($username);
+                if ($username === '') {
+                    $this->logger->error('Cannot auto-provision {method} user: the username is empty once cleaned', ['method' => strtoupper($authMethod)]);
+                    return null;
+                }
                 $username = $this->ensureUniqueUsername($username);
             }
             $this->logger->info('Final username for creation: {username}', ['username' => $username]);
+
+            $email = $this->emailForNewUser($userInfo, $authMethod);
 
             // Log all the data that will be inserted
             $userData = [
                 'username' => $username,
                 'password' => '',
                 'fullname' => $userInfo->getDisplayName() ?: $userInfo->getFullName(),
-                'email' => $userInfo->getEmail(),
+                'email' => $email,
                 'description' => 'Created via ' . strtoupper($authMethod) . ' from ' . $providerId,
                 'active' => 1,
                 'perm_templ' => $permissionTemplateId
@@ -782,6 +854,9 @@ class UserProvisioningService
         // The raw lookup: a superuser template is still mapped when superuser provisioning is off
         try {
             foreach ((array)$this->configManager->get($authMethod, 'permission_template_mapping', []) as $templateName) {
+                if (!is_scalar($templateName)) {
+                    continue;
+                }
                 if ($this->userRepository->findPermissionTemplateIdByName((string)$templateName) === $templateId) {
                     return true;
                 }

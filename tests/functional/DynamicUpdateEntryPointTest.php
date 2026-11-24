@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Poweradmin\Tests\Functional;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -22,6 +23,20 @@ class DynamicUpdateEntryPointTest extends TestCase
         $this->assertSame('', $stderr);
     }
 
+    /**
+     * The CLI never emits headers, so check the entry point sends the header before anything it can answer with.
+     */
+    public function testEveryAnswerIsSentWithNoStore(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/dynamic_update.php');
+
+        $header = strpos($source, "header('Cache-Control: no-store')");
+        $this->assertNotFalse($header);
+        $this->assertLessThan(strpos($source, 'http_response_code('), $header);
+        $this->assertLessThan(strpos($source, 'echo '), $header);
+        $this->assertLessThan(strpos($source, 'Kernel::boot('), $header);
+    }
+
     public function testARequestWithoutAUsernameIsRejectedAsBadAuth(): void
     {
         [$exitCode, $stdout, $stderr] = $this->runDynamicUpdate(['HTTP_USER_AGENT' => 'curl/8']);
@@ -29,6 +44,43 @@ class DynamicUpdateEntryPointTest extends TestCase
         $this->assertSame(0, $exitCode);
         $this->assertSame("badauth\n", $stdout);
         $this->assertSame('', $stderr);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function crossSiteValues(): array
+    {
+        return ['cross-site' => ['cross-site'], 'same-site' => ['same-site'], 'upper case' => ['Cross-Site']];
+    }
+
+    #[DataProvider('crossSiteValues')]
+    public function testARequestFromAnotherSiteIsRejectedBeforeItIsProcessed(string $site): void
+    {
+        [$exitCode, $stdout] = $this->runDynamicUpdate([
+            'HTTP_USER_AGENT' => 'curl/8',
+            'PHP_AUTH_USER' => 'bob',
+            'HTTP_SEC_FETCH_SITE' => $site,
+        ]);
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame("badauth\n", $stdout);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function sameSiteValues(): array
+    {
+        return ['same-origin' => ['same-origin'], 'none' => ['none']];
+    }
+
+    #[DataProvider('sameSiteValues')]
+    public function testARequestThatIsNotCrossSiteIsProcessed(string $site): void
+    {
+        [, $stdout] = $this->runDynamicUpdate([
+            'HTTP_USER_AGENT' => 'curl/8',
+            'PHP_AUTH_USER' => 'bob',
+            'HTTP_SEC_FETCH_SITE' => $site,
+        ]);
+
+        $this->assertSame("notfqdn\n", $stdout);
     }
 
     public function testARequestWithoutAHostnameIsRejectedAsNotFqdn(): void

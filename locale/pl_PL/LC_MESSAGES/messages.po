@@ -1238,6 +1238,14 @@ msgstr ""
 "Edycja szablonu uprawnień z uprawnieniami administratora wymaga uprawnień "
 "administratora."
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"Usunięcie wymuszonego uprawnienia MFA z szablonu uprawnień przypisanego "
+"administratorowi wymaga uprawnień administratora."
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "Nie udało się zaktualizować szablonu uprawnień."
@@ -2383,6 +2391,11 @@ msgstr "Rodzaj metadanych %s działa tylko razem z %s. Dodaj również wiersz %s
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr ""
 "Rodzaj metadanych %s może zostać zmieniony wyłącznie przez administratora."
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "Typ metadanych %s wymaga uprawnienia do zarządzania DNSSEC w tej strefie."
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -10213,6 +10226,10 @@ msgstr ""
 "Pominięte komentarze rekordów: %d. Komentarze rekordów są wyłączone w "
 "konfiguracji."
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... i jeszcze %d ostrzeżeń"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -16753,3 +16770,15 @@ msgstr "Ktoś inny zmienił użytkownika %s po otwarciu tej listy, więc ten wie
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "Strefa, dla której wybrano akcję, nie należy do tego użytkownika."
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "Pole %s zawiera nieprawidłowe znaki."
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "Dołącz wyłączone rekordy"

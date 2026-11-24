@@ -27,6 +27,8 @@ use Poweradmin\Domain\Port\EmailChangeNotifierInterface;
 use Poweradmin\Domain\Port\PasswordHasherInterface;
 use Poweradmin\Domain\Port\PasswordPolicyInterface;
 use Poweradmin\Domain\Port\TransactionInterface;
+use Poweradmin\Domain\Model\UserMfa;
+use Poweradmin\Domain\Repository\UserMfaRepositoryInterface;
 use Poweradmin\Domain\Repository\UserRepositoryInterface;
 use Poweradmin\Domain\Service\Auth\PermissionService;
 use Poweradmin\Domain\Service\Dns\DomainManagerInterface;
@@ -102,7 +104,8 @@ class UserManagementService
         private readonly ?TransactionInterface $transaction = null,
         private readonly ?EmailChangeNotifierInterface $emailChangeNotifier = null,
         private readonly ?ZoneAccountSyncService $accountSync = null,
-        private readonly ?SupermasterManager $supermasters = null
+        private readonly ?SupermasterManager $supermasters = null,
+        private readonly ?UserMfaRepositoryInterface $mfaRepository = null
     ) {
         $this->ownershipLimit = $ownershipLimit;
         $this->protectLastAdminOnEdit = $protectLastAdminOnEdit;
@@ -264,6 +267,10 @@ class UserManagementService
             return $lengthError;
         }
 
+        if (!self::isCleanUsername($command->username)) {
+            return $this->usernameUnclean();
+        }
+
         // Check if username already exists
         if ($this->userRepository->getUserByUsername($command->username)) {
             return $this->usernameExists();
@@ -342,7 +349,7 @@ class UserManagementService
      * @param int $userId User ID to update
      * @return array Result with success status and message
      */
-    public function updateUser(int $userId, UpdateUserCommand $command): array
+    public function updateUser(int $userId, UpdateUserCommand $command, ?int $actingUserId = null): array
     {
         $user = $this->userRepository->getUserById($userId);
         if ($user === null) {
@@ -423,6 +430,9 @@ class UserManagementService
         // A changed username must be free; an unchanged one is not looked up, since
         // legacy data may hold it twice and the lookup could land on the other row.
         if ($command->username !== null && $command->username !== (string)($user['username'] ?? '')) {
+            if (!self::isCleanUsername($command->username)) {
+                return $this->usernameUnclean();
+            }
             $existingUser = $this->userRepository->getUserByUsername($command->username);
             if ($existingUser && (int)$existingUser['id'] !== $userId) {
                 return $this->usernameExists();
@@ -457,7 +467,8 @@ class UserManagementService
             }
 
             // The last-admin checks and the write share one transaction holding the super admin rows
-            $written = $this->underUberuserLock(function () use ($userId, $command) {
+            $mfaReset = false;
+            $written = $this->underUberuserLock(function () use ($userId, $command, $user, $actingUserId, &$mfaReset) {
                 // Check if trying to disable the last remaining uberuser
                 if ($command->active === false && $this->userRepository->isLastUberuser($userId)) {
                     return [
@@ -487,7 +498,12 @@ class UserManagementService
                     ];
                 }
 
-                return $this->userRepository->updateUser($userId, $command);
+                $saved = $this->userRepository->updateUser($userId, $command);
+                if ($saved) {
+                    $mfaReset = $this->resetEmailMfaAfterForeignEmailChange($userId, $user, $command, $actingUserId);
+                }
+
+                return $saved;
             });
             if (is_array($written)) {
                 return $written;
@@ -513,7 +529,8 @@ class UserManagementService
             return [
                 'success' => true,
                 'message' => 'User updated successfully',
-                'user_id' => $userId
+                'user_id' => $userId,
+                'mfa_reset' => $mfaReset,
             ];
         } catch (Exception $e) {
             $renamed = $command->username !== null && $command->username !== (string)($user['username'] ?? '');
@@ -528,6 +545,36 @@ class UserManagementService
                 'code' => self::ERR_WRITE,
             ];
         }
+    }
+
+    /**
+     * Email codes go to the stored address, so an address set by someone else would
+     * receive them. The user's own change already needs their password and is left alone.
+     *
+     * @param array<string, mixed> $before The stored row before the write
+     * @return bool True when an enabled email factor was switched off
+     */
+    private function resetEmailMfaAfterForeignEmailChange(int $userId, array $before, UpdateUserCommand $command, ?int $actingUserId): bool
+    {
+        if (
+            $this->mfaRepository === null
+            || $actingUserId === null
+            || $actingUserId === $userId
+            || $command->email === null
+            || strcasecmp((string)($before['email'] ?? ''), $command->email) === 0
+        ) {
+            return false;
+        }
+
+        $mfa = $this->mfaRepository->findByUserId($userId);
+        if ($mfa === null || !$mfa->isEnabled() || $mfa->getType() !== UserMfa::TYPE_EMAIL) {
+            return false;
+        }
+
+        $mfa->disable();
+        $this->mfaRepository->save($mfa);
+
+        return true;
     }
 
     /**
@@ -1043,6 +1090,37 @@ class UserManagementService
         ];
     }
 
+    /**
+     * Whether a username has no leading or trailing whitespace and no control characters.
+     * Such names look like another account's and fall outside what lookups match.
+     */
+    public static function isCleanUsername(string $username): bool
+    {
+        return preg_match('/^[\s\p{Z}]|[\s\p{Z}]$|\p{Cc}/u', $username) === 0;
+    }
+
+    /**
+     * A username with the characters isCleanUsername() refuses taken out of it: control
+     * characters everywhere, whitespace at both ends.
+     */
+    public static function cleanUsername(string $username): string
+    {
+        $stripped = preg_replace('/\p{Cc}/u', '', $username);
+
+        return (string)preg_replace('/^[\s\p{Z}]+|[\s\p{Z}]+$/u', '', (string)$stripped);
+    }
+
+    /** @return array{success: false, message: string, refusal: Refusal, code: string} */
+    private function usernameUnclean(): array
+    {
+        return [
+            'success' => false,
+            'message' => 'Username must not start or end with whitespace or contain control characters',
+            'refusal' => Refusal::INVALID_INPUT,
+            'code' => self::ERR_USERNAME_REQUIRED,
+        ];
+    }
+
     private function usernameExists(): array
     {
         return [
@@ -1132,6 +1210,14 @@ class UserManagementService
     {
         $limits = ['username' => [$username, 64], 'fullname' => [$fullname, 255], 'email' => [$email, 255], 'description' => [$description, 1024]];
         foreach ($limits as $field => [$value, $max]) {
+            if ($value !== null && !mb_check_encoding($value, 'UTF-8')) {
+                return [
+                    'success' => false,
+                    'message' => ucfirst($field) . ' contains invalid characters',
+                    'refusal' => Refusal::INVALID_INPUT,
+                    'code' => self::ERR_FIELD_LENGTH,
+                ];
+            }
             if ($value !== null && mb_strlen($value) > $max) {
                 return [
                     'success' => false,

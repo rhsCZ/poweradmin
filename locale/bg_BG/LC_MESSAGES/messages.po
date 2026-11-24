@@ -1228,6 +1228,14 @@ msgstr ""
 "Редактирането на шаблон за права с администраторски права изисква "
 "администраторски права."
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"Премахването на задължителното разрешение за MFA от шаблон за разрешения, "
+"зададен на администратор, изисква администраторски права."
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "Шаблонът за права не може да бъде обновен."
@@ -2350,6 +2358,11 @@ msgstr "Видът метаданни %s влиза в сила само зае�
 #, php-format
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr "Видът метаданни %s може да бъде променян само от администратор."
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "Типът метаданни %s изисква разрешение за управление на DNSSEC за тази зона."
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -10251,6 +10264,10 @@ msgstr ""
 "Пропуснати коментари на записи: %d. Коментарите на записи са изключени в "
 "конфигурацията."
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... и още %d предупреждения"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -16827,3 +16844,15 @@ msgstr "Потребителят %s е променен от някой друг
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "Зона, за която сте избрали действие, не принадлежи на този потребител."
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "Полето %s съдържа невалидни знаци."
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "Включване на деактивираните записи"

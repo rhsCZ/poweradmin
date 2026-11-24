@@ -1224,6 +1224,14 @@ msgstr ""
 "Mengedit templat izin yang memiliki hak administrator memerlukan hak "
 "administrator."
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"Menghapus izin MFA wajib dari templat izin yang dipegang administrator "
+"memerlukan hak administrator."
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "Templat izin tidak dapat diperbarui."
@@ -2341,6 +2349,11 @@ msgstr ""
 #, php-format
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr "Jenis metadata %s hanya dapat diubah oleh administrator."
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "Jenis metadata %s memerlukan izin pengelolaan DNSSEC pada zona ini."
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -10198,6 +10211,10 @@ msgstr ""
 "Komentar rekaman yang dilewati: %d. Komentar rekaman dinonaktifkan dalam "
 "konfigurasi."
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... dan %d peringatan lainnya"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -16739,3 +16756,15 @@ msgstr "Orang lain mengubah pengguna %s setelah Anda membuka daftar ini, jadi ba
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "Zona yang Anda pilih tindakannya bukan milik pengguna ini."
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "Kolom %s mengandung karakter tidak valid."
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "Sertakan rekaman yang dinonaktifkan"

@@ -24,6 +24,7 @@ namespace Poweradmin\Application\Service\Backend;
 
 use Exception;
 use Poweradmin\Domain\Utility\IpHelper;
+use Poweradmin\Infrastructure\Api\HttpClient;
 use Poweradmin\Infrastructure\Api\PowerdnsApiClient;
 use Poweradmin\Domain\Config\ConfigurationInterface;
 use Poweradmin\Domain\Error\ApiErrorException;
@@ -118,7 +119,8 @@ class PowerdnsStatusService
                 // Process metrics data from the API
                 if (!empty($metricsData)) {
                     foreach ($metricsData as $metric) {
-                        if (isset($metric['name'], $metric['value'])) {
+                        // An odd entry from the API is dropped; the page and API read these as strings and numbers
+                        if (is_array($metric) && isset($metric['name'], $metric['value']) && is_string($metric['name']) && (is_scalar($metric['value']) || is_array($metric['value']))) {
                             $metrics[$metric['name']] = $metric['value'];
                         }
                     }
@@ -561,7 +563,7 @@ class PowerdnsStatusService
         $body = false;
         $meta = [];
         try {
-            $body = @stream_get_contents($stream);
+            $body = @stream_get_contents($stream, $this->maxMetricsBytes() + 1);
             $meta = stream_get_meta_data($stream);
         } finally {
             fclose($stream);
@@ -575,7 +577,18 @@ class PowerdnsStatusService
             return false;
         }
 
+        if (is_string($body) && strlen($body) > $this->maxMetricsBytes()) {
+            $this->logger->warning('PowerdnsStatusService: metrics response is larger than {max} bytes and was ignored', ['max' => $this->maxMetricsBytes()]);
+            return false;
+        }
+
         return $body;
+    }
+
+    /** Largest Prometheus text read into memory; a real PowerDNS page is a few hundred KiB. */
+    protected function maxMetricsBytes(): int
+    {
+        return HttpClient::MAX_RESPONSE_BYTES;
     }
 
     /**

@@ -1219,6 +1219,14 @@ msgstr ""
 "Úprava šablóny oprávnení s administrátorskými právami vyžaduje "
 "administrátorské práva."
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"Odstránenie vynúteného oprávnenia MFA zo šablóny oprávnení, ktorú má "
+"správca, vyžaduje práva správcu."
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "Šablónu oprávnení nebolo možné aktualizovať."
@@ -2350,6 +2358,11 @@ msgstr "Typ metadát %s sa prejaví iba spolu s %s. Pridajte aj riadok %s."
 #, php-format
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr "Druh metadát %s môže zmeniť iba administrátor."
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "Typ metaúdajov %s vyžaduje oprávnenie na správu DNSSEC pre túto zónu."
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -10032,6 +10045,10 @@ msgstr ""
 "Preskočené komentáre záznamov: %d. Komentáre záznamov sú v konfigurácii "
 "vypnuté."
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... a ďalších %d upozornení"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -16518,3 +16535,15 @@ msgstr "Používateľa %s po otvorení tohto zoznamu zmenil niekto iný, preto t
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "Zóna, pre ktorú ste vybrali akciu, nepatrí tomuto používateľovi."
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "Pole %s obsahuje neplatné znaky."
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "Zahrnúť zakázané záznamy"

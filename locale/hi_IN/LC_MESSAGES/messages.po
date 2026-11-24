@@ -1195,6 +1195,14 @@ msgid ""
 msgstr ""
 "प्रशासक अधिकारों वाले अनुमति टेम्पलेट को संपादित करने के लिए प्रशासक अधिकार आवश्यक हैं।"
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"किसी व्यवस्थापक के पास मौजूद अनुमति टेम्पलेट से अनिवार्य MFA अनुमति हटाने "
+"के लिए व्यवस्थापक अधिकार आवश्यक हैं।"
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "अनुमति टेम्पलेट अद्यतन नहीं किया जा सका।"
@@ -2290,6 +2298,11 @@ msgstr "मेटाडाटा प्रकार %s केवल %s के �
 #, php-format
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr "मेटाडेटा प्रकार %s को केवल एक प्रशासक ही बदल सकता है।"
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "मेटाडेटा प्रकार %s के लिए इस ज़ोन पर DNSSEC प्रबंधन अनुमति आवश्यक है।"
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -9876,6 +9889,10 @@ msgid ""
 "configuration."
 msgstr "छोड़ी गई रिकॉर्ड टिप्पणियाँ: %d. कॉन्फ़िगरेशन में रिकॉर्ड टिप्पणियाँ अक्षम हैं।"
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... और %d चेतावनियाँ"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -16299,3 +16316,15 @@ msgstr "आपके यह सूची खोलने के बाद कि
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "जिस ज़ोन के लिए आपने कोई कार्रवाई चुनी है, वह इस उपयोगकर्ता का नहीं है।"
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "%s क्षेत्र में अमान्य वर्ण शामिल हैं।"
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "अक्षम रिकॉर्ड शामिल करें"

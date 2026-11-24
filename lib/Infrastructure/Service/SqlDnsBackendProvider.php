@@ -573,6 +573,11 @@ final class SqlDnsBackendProvider implements DnsBackendProviderInterface
         $stmt = $this->db->prepare("DELETE FROM $recordsTable WHERE id = ?");
         $stmt->execute([$recordId]);
 
+        // SQLite reuses ids, so a left-over template link would point at the next holder of this id
+        if (is_int($recordId) || ctype_digit($recordId)) {
+            $this->db->prepare("DELETE FROM records_zone_templ WHERE record_id = ?")->execute([(int)$recordId]);
+        }
+
         // SQLite reuses ids, so a left-over link would show this comment on the next record
         $commentsTable = $this->tableNameService->getTable(PdnsTable::COMMENTS);
         foreach (
@@ -594,10 +599,27 @@ final class SqlDnsBackendProvider implements DnsBackendProviderInterface
 
     public function zoneExists(string $zoneName): bool
     {
+        return $this->findZoneIdByLowerName(strtolower($zoneName)) !== null;
+    }
+
+    /**
+     * The indexed exact match goes first so a lowercase row wins; only a miss falls back to
+     * LOWER(name), which finds a legacy mixed-case row but cannot use the name index.
+     */
+    private function findZoneIdByLowerName(string $lower): ?int
+    {
         $domainsTable = $this->tableNameService->getTable(PdnsTable::DOMAINS);
-        $stmt = $this->db->prepare("SELECT COUNT(id) FROM $domainsTable WHERE name = :name");
-        $stmt->execute([':name' => $zoneName]);
-        return (int)$stmt->fetchColumn() > 0;
+
+        foreach (['name', 'LOWER(name)'] as $column) {
+            $stmt = $this->db->prepare("SELECT id FROM $domainsTable WHERE $column = :name ORDER BY id");
+            $stmt->execute([':name' => $lower]);
+            $id = $stmt->fetchColumn();
+            if ($id !== false) {
+                return (int)$id;
+            }
+        }
+
+        return null;
     }
 
     public function getZoneById(int $domainId): ?array
@@ -645,11 +667,7 @@ final class SqlDnsBackendProvider implements DnsBackendProviderInterface
         if (empty($zoneName)) {
             return null;
         }
-        $domainsTable = $this->tableNameService->getTable(PdnsTable::DOMAINS);
-        $stmt = $this->db->prepare("SELECT id FROM $domainsTable WHERE name = :name");
-        $stmt->execute([':name' => $zoneName]);
-        $id = $stmt->fetchColumn();
-        return $id !== false ? (int)$id : null;
+        return $this->findZoneIdByLowerName(strtolower($zoneName));
     }
 
     public function getZoneTypeById(int $domainId): string

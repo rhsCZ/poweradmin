@@ -48,6 +48,8 @@ class DbUserRepositoryProvisioningTest extends TestCase
                 "CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL, fullname TEXT NOT NULL,
                     email TEXT NOT NULL, description TEXT NOT NULL, perm_templ INTEGER NOT NULL, perm_templ_source TEXT NOT NULL DEFAULT 'admin',
                     active INTEGER, use_ldap INTEGER NOT NULL, auth_method TEXT NOT NULL DEFAULT 'sql')",
+                "CREATE TABLE oidc_user_links (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, oidc_subject TEXT NOT NULL)",
+                "CREATE TABLE saml_user_links (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, saml_subject TEXT NOT NULL)",
                 "CREATE TABLE perm_templ (id INTEGER PRIMARY KEY, name TEXT NOT NULL, descr TEXT, template_type TEXT NOT NULL DEFAULT 'user')",
                 "INSERT INTO perm_templ (id, name) VALUES (1, 'Administrator'), (5, 'Guest')",
                 "INSERT INTO users (id, username, password, fullname, email, description, perm_templ, perm_templ_source, active, use_ldap, auth_method)
@@ -109,6 +111,45 @@ class DbUserRepositoryProvisioningTest extends TestCase
 
         $this->repository->updateUser(1, new UpdateUserCommand(useRemoteUser: false));
         $this->assertSame(['sql', 0], $this->authColumns(1));
+    }
+
+    public function testSwitchingAnSsoAccountToLdapOrWebServerDeletesItsSsoLinks(): void
+    {
+        foreach (['useLdap', 'useRemoteUser'] as $switch) {
+            $this->db->exec("UPDATE users SET auth_method = 'oidc' WHERE id = 1");
+            $this->db->exec("DELETE FROM oidc_user_links; DELETE FROM saml_user_links");
+            $this->db->exec("INSERT INTO oidc_user_links (user_id, oidc_subject) VALUES (1, 'sub-a'), (2, 'sub-b')");
+            $this->db->exec("INSERT INTO saml_user_links (user_id, saml_subject) VALUES (1, 'name-a')");
+
+            $this->repository->updateUser(1, new UpdateUserCommand(...[$switch => true]));
+
+            $this->assertSame(0, (int)$this->db->query('SELECT COUNT(*) FROM oidc_user_links WHERE user_id = 1')->fetchColumn(), $switch);
+            $this->assertSame(0, (int)$this->db->query('SELECT COUNT(*) FROM saml_user_links WHERE user_id = 1')->fetchColumn(), $switch);
+            $this->assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM oidc_user_links WHERE user_id = 2')->fetchColumn(), 'other accounts keep their links');
+        }
+    }
+
+    public function testEditingAnSsoAccountWithoutSwitchingItKeepsItsLinks(): void
+    {
+        $this->db->exec("INSERT INTO oidc_user_links (user_id, oidc_subject) VALUES (1, 'sub-a')");
+
+        $this->repository->updateUser(1, new UpdateUserCommand(useLdap: false));
+        $this->repository->updateUser(1, new UpdateUserCommand(fullname: 'Renamed'));
+
+        $this->assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM oidc_user_links WHERE user_id = 1')->fetchColumn());
+    }
+
+    public function testResavingAnLdapOrWebServerAccountKeepsItsLinks(): void
+    {
+        foreach ([['ldap', 'useLdap'], ['remote_user', 'useRemoteUser']] as [$method, $switch]) {
+            $this->db->exec("UPDATE users SET auth_method = '$method' WHERE id = 1");
+            $this->db->exec("DELETE FROM oidc_user_links");
+            $this->db->exec("INSERT INTO oidc_user_links (user_id, oidc_subject) VALUES (1, 'sub-a')");
+
+            $this->repository->updateUser(1, new UpdateUserCommand(...[$switch => true]));
+
+            $this->assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM oidc_user_links WHERE user_id = 1')->fetchColumn(), $method);
+        }
     }
 
     /** @return array{0: string, 1: int} */
@@ -181,10 +222,37 @@ class DbUserRepositoryProvisioningTest extends TestCase
         $this->assertNull($this->repository->findActiveUserIdByEmail('nobody@example.org'));
     }
 
+    public function testEmailGuardLookupsIgnoreCase(): void
+    {
+        $this->assertSame(1, $this->repository->findActiveUserIdByEmail('Shared@Example.ORG'));
+        $this->assertSame(2, $this->repository->findInactiveUserIdByEmail('SHARED@example.org'));
+        $this->assertNull($this->repository->findActiveUserIdByEmail('shared@example.com'));
+    }
+
+    public function testEmailGuardLookupsMatchNoAccountWhenTwoDifferOnlyInCase(): void
+    {
+        $this->db->exec("INSERT INTO users (id, username, password, fullname, email, description, perm_templ, active, use_ldap)
+            VALUES (8, 'upper', 'h', '', 'Twin@Example.org', '', 5, 1, 0), (9, 'lower', 'h', '', 'twin@example.org', '', 5, 1, 0),
+                   (10, 'off-a', 'h', '', 'Off@Example.org', '', 5, 0, 0), (11, 'off-b', 'h', '', 'off@example.org', '', 5, 0, 0)");
+
+        $this->assertNull($this->repository->findActiveUserIdByEmail('twin@example.org'));
+        $this->assertNull($this->repository->findInactiveUserIdByEmail('OFF@example.org'));
+        $this->assertSame(1, $this->repository->findActiveUserIdByEmail('shared@example.org'));
+    }
+
     public function testFindPermissionTemplateIdByNameIsExact(): void
     {
         $this->assertSame(5, $this->repository->findPermissionTemplateIdByName('Guest'));
         $this->assertNull($this->repository->findPermissionTemplateIdByName('Guests'));
+    }
+
+    public function testFindPermissionTemplateIdByNamePrefersTheUserTemplateThenTheOldestRow(): void
+    {
+        $this->db->exec("INSERT INTO perm_templ (id, name, template_type) VALUES (2, 'Guest', 'group'), (8, 'Guest', 'user'), (9, 'Dup', 'group'), (4, 'Dup', 'group')");
+
+        // Id 2 is the lowest but a group template; 5 is the oldest user template
+        $this->assertSame(5, $this->repository->findPermissionTemplateIdByName('Guest'));
+        $this->assertSame(4, $this->repository->findPermissionTemplateIdByName('Dup'));
     }
 
     private const DIRTY_NAME = "Jane\r\nBcc: x@example.org\u{200B}\u{202E} Doe\t";

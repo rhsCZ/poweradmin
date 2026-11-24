@@ -1278,6 +1278,14 @@ msgstr ""
 "La modification d'un modèle de permissions doté de droits d'administrateur "
 "nécessite des droits d'administrateur."
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"Retirer l'autorisation MFA obligatoire d'un modèle de permissions utilisé "
+"par un administrateur nécessite des droits d'administrateur."
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "Le modèle de permissions n'a pas pu être mis à jour."
@@ -2424,6 +2432,11 @@ msgstr ""
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr ""
 "Le type de métadonnées %s ne peut être modifié que par un administrateur."
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "Le type de métadonnées %s nécessite l'autorisation de gestion DNSSEC sur cette zone."
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -10513,6 +10526,10 @@ msgstr ""
 "Commentaires d'enregistrements ignorés : %d. Les commentaires "
 "d'enregistrements sont désactivés dans la configuration."
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... et %d autres avertissements"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -17180,3 +17197,15 @@ msgstr "Quelqu'un d'autre a modifié l'utilisateur %s après que vous avez ouver
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "Une zone pour laquelle vous avez choisi une action n'appartient pas à cet utilisateur."
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "Le champ %s contient des caractères invalides."
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "Inclure les enregistrements désactivés"

@@ -1223,6 +1223,14 @@ msgstr ""
 "Penyuntingan templat kebenaran yang mempunyai hak pentadbir memerlukan hak "
 "pentadbir."
 
+#: lib/Application/Controller/User/EditPermTemplController.php:203
+msgid ""
+"Removing the enforced MFA permission from a permission template held by an "
+"administrator requires administrator rights."
+msgstr ""
+"Mengalih keluar kebenaran MFA wajib daripada templat kebenaran yang "
+"dipegang oleh pentadbir memerlukan hak pentadbir."
+
 #: lib/Application/Controller/User/EditPermTemplController.php:167
 msgid "The permission template could not be updated."
 msgstr "Templat kebenaran tidak dapat dikemas kini."
@@ -2331,6 +2339,11 @@ msgstr ""
 #, php-format
 msgid "Metadata kind %s can only be changed by an administrator."
 msgstr "Jenis metadata %s hanya boleh diubah oleh pentadbir."
+
+#: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
+#, php-format
+msgid "Metadata kind %s needs the DNSSEC management permission on this zone."
+msgstr "Jenis metadata %s memerlukan kebenaran pengurusan DNSSEC pada zon ini."
 
 #: lib/Application/Service/Zone/ZoneMetadataFormMessages.php:50
 #, php-format
@@ -10168,6 +10181,10 @@ msgid ""
 msgstr ""
 "Komen rekod yang dilangkau: %d. Komen rekod dinyahdayakan dalam konfigurasi."
 
+#: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:205
+msgid "... and %d more warnings"
+msgstr "... dan %d amaran lagi"
+
 #: lib/Module/ZoneImportExport/Controller/ZoneFileImportController.php:282
 msgid ""
 "Cannot import a new zone: zone_ownership_mode is groups_only but no groups "
@@ -16715,3 +16732,15 @@ msgstr "Orang lain telah mengubah pengguna %s selepas anda membuka senarai ini, 
 #: lib/Application/Service/User/UserFormMessages.php:57
 msgid "A zone you chose an action for does not belong to this user."
 msgstr "Zon yang anda pilih tindakannya bukan milik pengguna ini."
+
+#: lib/Application/Service/Record/RecordAddService.php:114
+#: lib/Domain/Service/Dns/RecordManager.php:770
+#: lib/Domain/Service/Zone/ZoneChangeRequestService.php:765
+#: lib/Domain/Service/Zone/ZoneEditService.php:120
+#, php-format
+msgid "The %s field contains invalid characters."
+msgstr "Medan %s mengandungi aksara tidak sah."
+
+#: templates/default/edit.html:651
+msgid "Include disabled records"
+msgstr "Sertakan rekod yang dinyahdayakan"

@@ -88,9 +88,10 @@ class DbUserRepository implements UserRepositoryInterface
 
     public function findActiveUsersByEmail(string $email): array
     {
+        $match = $this->emailEquals('email', ':email');
         $query = "SELECT id, username, fullname, email, auth_method, active
                   FROM users
-                  WHERE email = :email
+                  WHERE $match
                   AND active = 1
                   ORDER BY username ASC";
 
@@ -1402,6 +1403,23 @@ class DbUserRepository implements UserRepositoryInterface
         return (bool)$stmt->fetchColumn();
     }
 
+    public function getUserIdsHoldingTemplate(int $permTemplId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT id FROM users WHERE perm_templ = :direct
+             UNION
+             SELECT ugm.user_id
+             FROM user_group_members ugm
+             JOIN user_groups ug ON ugm.group_id = ug.id
+             WHERE ug.perm_templ = :viaGroup"
+        );
+        $stmt->bindValue(':direct', $permTemplId, PDO::PARAM_INT);
+        $stmt->bindValue(':viaGroup', $permTemplId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     public function getTemplatePermissionNames(int $permTemplId): array
     {
         $stmt = $this->db->prepare("SELECT DISTINCT perm_items.name
@@ -1417,7 +1435,8 @@ class DbUserRepository implements UserRepositoryInterface
     public function findPermissionTemplateIdByName(string $name): ?int
     {
         $match = DbCompat::accentSensitiveEquals($this->db->getAttribute(PDO::ATTR_DRIVER_NAME), 'name');
-        $stmt = $this->db->prepare("SELECT id FROM perm_templ WHERE $match");
+        // Names are not unique: a user template wins over a group one, then the oldest row
+        $stmt = $this->db->prepare("SELECT id FROM perm_templ WHERE $match ORDER BY CASE WHEN template_type = 'user' THEN 0 ELSE 1 END, id");
         $stmt->execute([$name]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1556,24 +1575,38 @@ class DbUserRepository implements UserRepositoryInterface
         return $result ?: null;
     }
 
+    /**
+     * The one account an email guard matched. Emails differing only in case can match two
+     * accounts, and guessing between them could link or hand back the wrong one, so none is returned.
+     *
+     * @param list<mixed> $ids
+     */
+    private function singleUserId(array $ids): ?int
+    {
+        if (count($ids) > 1) {
+            $this->logger->warning('Several accounts share one email address apart from case, so none is matched');
+            return null;
+        }
+
+        return $ids === [] ? null : (int)$ids[0];
+    }
+
     public function findActiveUserIdByEmail(string $email): ?int
     {
-        $match = DbCompat::accentSensitiveEquals($this->db->getAttribute(PDO::ATTR_DRIVER_NAME), 'email');
+        $match = $this->emailEquals('email', ':email');
         $stmt = $this->db->prepare("SELECT id FROM users WHERE $match AND active = 1");
-        $stmt->execute([$email]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->execute([':email' => $email]);
 
-        return $result ? (int)$result['id'] : null;
+        return $this->singleUserId($stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
     public function findInactiveUserIdByEmail(string $email): ?int
     {
-        $match = DbCompat::accentSensitiveEquals($this->db->getAttribute(PDO::ATTR_DRIVER_NAME), 'email');
+        $match = $this->emailEquals('email', ':email');
         $stmt = $this->db->prepare("SELECT id FROM users WHERE $match AND (active IS NULL OR active <> 1)");
-        $stmt->execute([$email]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->execute([':email' => $email]);
 
-        return $result ? (int)$result['id'] : null;
+        return $this->singleUserId($stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
     public function getProvisioningProfile(int $userId): array
@@ -1655,16 +1688,15 @@ class DbUserRepository implements UserRepositoryInterface
 
         // auth_method and the legacy use_ldap flag change together; switching LDAP off
         // keeps an OIDC, SAML or web server account as it is.
+        $movedToDirectory = false;
         if ($changes->useLdap !== null || $changes->useRemoteUser !== null) {
-            // Only switching a method off depends on the method the account has now
-            $current = AuthMethod::SQL;
-            if ($changes->useLdap !== true && $changes->useRemoteUser !== true) {
-                $currentStmt = $this->db->prepare('SELECT auth_method FROM users WHERE id = :id');
-                $currentStmt->execute([':id' => $userId]);
-                $current = AuthMethod::fromDb((string)($currentStmt->fetchColumn() ?: 'sql'));
-            }
+            $currentStmt = $this->db->prepare('SELECT auth_method FROM users WHERE id = :id');
+            $currentStmt->execute([':id' => $userId]);
+            $current = AuthMethod::fromDb((string)($currentStmt->fetchColumn() ?: 'sql'));
 
             $target = $changes->authMethodAfter($current);
+            $movedToDirectory = $target !== null && $target !== $current
+                && ($target === AuthMethod::LDAP || $target === AuthMethod::REMOTE_USER);
             if ($target !== null) {
                 $setFields[] = 'auth_method = :auth_method';
                 $setFields[] = 'use_ldap = :use_ldap';
@@ -1694,6 +1726,10 @@ class DbUserRepository implements UserRepositoryInterface
         }
         if ($written && $changes->passwordGiven()) {
             $this->expireResetTokensForUser($userId);
+        }
+        // A subject linked while the account signed in through SSO must not keep reaching it
+        if ($written && $movedToDirectory) {
+            $this->cleanupExternalAuthLinks($userId);
         }
 
         return $written;
